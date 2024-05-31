@@ -212,7 +212,7 @@ for epoch in range(NUM_EPOCHS):
     if (epoch + 1) >= args.wait_save_best_epoch:
         
         save_best_model(
-                test_accuracy_ema[-1], epoch, model, optimizer, class_criterion
+                test_class_loss_ema[-1], epoch, model, optimizer, class_criterion
         )
     
     if (epoch + 1) % int(args.save_epoch) == 0:
