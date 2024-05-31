@@ -13,7 +13,7 @@ def save_model(epochs, model, optimizer, criterion):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': criterion,
-                }, 'outputs/final_model.pth')
+                }, 'result/final_model.pth')
 
 class SaveBestModel:
     """
@@ -39,7 +39,7 @@ class SaveBestModel:
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': criterion,
-                }, 'outputs/best_model.pth')
+                }, 'result/best_model.pth')
             
 def sigmoid_rampup(current, rampup_length):
     current = np.clip(current, 0.0, rampup_length)
