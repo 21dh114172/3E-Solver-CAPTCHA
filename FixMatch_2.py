@@ -29,6 +29,8 @@ parser.add_argument('--weight', default=100.0, type=float, help='the weight of c
 parser.add_argument('--teachforce', action="store_false", help='whether to use teaching force(Default: True)')
 parser.add_argument('--lr', default=0.02, type=float, help='learning rate')
 parser.add_argument('--seed', default=42, type=int, help='running seed')
+parser.add_argument('--save-epoch', default=50, type=int, help='save model per epoch')
+
 
 args = parser.parse_args()
 
@@ -206,7 +208,7 @@ for epoch in range(NUM_EPOCHS):
 
     print(f"epoch time {time.time()-time_epoch}\n")
 
-    if (epoch + 1) % 100 == 0:
+    if (epoch + 1) % int(args.save_epoch) == 0:
         fig = plt.figure(figsize=(20, 10))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
@@ -235,6 +237,8 @@ for epoch in range(NUM_EPOCHS):
         np.save("result/" + path + "_train_accuracy.npy", np.array(train_accuracy))
         np.save("result/" + path + "_test_class_loss_ema.npy", np.array(test_class_loss_ema))
         np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
+        torch.save(model, f'epoch_{epoch}_{path}.pth')
+        torch.save(model_ema, f'ema_{epoch}_{path}.pth')
 
 fig = plt.figure(figsize=(20, 10))
 ax1 = fig.add_subplot(121)
@@ -263,3 +267,6 @@ np.save("result/" + path + "_test_accuracy_ema.npy", np.array(test_accuracy_ema)
 np.save("result/" + path + "_train_accuracy.npy", np.array(train_accuracy))
 np.save("result/" + path + "_test_class_loss_ema.npy", np.array(test_class_loss_ema))
 np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
+
+torch.save(model, f'epoch_{epoch}_{path}.pth')
+torch.save(model_ema, f'ema_{epoch}_{path}.pth')
