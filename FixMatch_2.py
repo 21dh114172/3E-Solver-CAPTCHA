@@ -208,7 +208,9 @@ for epoch in range(NUM_EPOCHS):
     model_ema = model_ema.train()
 
     print(f"epoch time {time.time()-time_epoch}\n")
+    print((epoch + 1) >= args.wait_save_best_epoch)
     if (epoch + 1) >= args.wait_save_best_epoch:
+        
         save_best_model(
                 test_accuracy_ema[-1], epoch, model, optimizer, class_criterion
         )
