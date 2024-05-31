@@ -30,6 +30,7 @@ parser.add_argument('--teachforce', action="store_false", help='whether to use t
 parser.add_argument('--lr', default=0.02, type=float, help='learning rate')
 parser.add_argument('--seed', default=42, type=int, help='running seed')
 parser.add_argument('--save-epoch', default=50, type=int, help='save model per epoch')
+parser.add_argument('--wait-save-best-epoch', default=30, type=int, help='wait until epoch to save best model')
 
 
 args = parser.parse_args()
@@ -207,9 +208,11 @@ for epoch in range(NUM_EPOCHS):
     model_ema = model_ema.train()
 
     print(f"epoch time {time.time()-time_epoch}\n")
-    save_best_model(
-            test_accuracy_ema[-1], epoch, model, optimizer, class_criterion
-    )
+    if epoch + 1 >= args.wait_save_best_epoch:
+        save_best_model(
+                test_accuracy_ema[-1], epoch, model, optimizer, class_criterion
+        )
+    
     if (epoch + 1) % int(args.save_epoch) == 0:
         fig = plt.figure(figsize=(20, 10))
         ax1 = fig.add_subplot(121)
