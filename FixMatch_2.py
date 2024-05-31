@@ -11,7 +11,7 @@ import numpy as np
 from datasets import load_datasets_mean_teacher
 from models import CNNSeq2Seq
 from util import compute_seq_acc, Seq2SeqLoss, ConsistentLoss, ConsistentLoss_MT_Temperature, \
-    get_current_consistency_weight
+    get_current_consistency_weight, SaveBestModel, save_model
 import random
 import time
 
@@ -86,7 +86,7 @@ test_accuracy = []
 test_class_loss_ema = []
 test_accclevel_ema = []
 test_accuracy_ema = []
-
+save_best_model = SaveBestModel()
 for epoch in range(NUM_EPOCHS):
     time_epoch = time.time()
     loss_1 = loss_2 = loss_mt = accuracy = accclevel = 0
@@ -207,7 +207,9 @@ for epoch in range(NUM_EPOCHS):
     model_ema = model_ema.train()
 
     print(f"epoch time {time.time()-time_epoch}\n")
-
+    save_best_model(
+            test_accuracy_ema[-1], epoch, model, optimizer, class_criterion
+    )
     if (epoch + 1) % int(args.save_epoch) == 0:
         fig = plt.figure(figsize=(20, 10))
         ax1 = fig.add_subplot(121)
@@ -269,5 +271,4 @@ np.save("result/" + path + "_train_accuracy.npy", np.array(train_accuracy))
 np.save("result/" + path + "_test_class_loss_ema.npy", np.array(test_class_loss_ema))
 np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
 
-torch.save(model, f'./result/epoch_{epoch + 1}_{path}.pth')
-torch.save(model_ema, f'./result/ema_epoch_{epoch + 1}_{path}.pth')
+save_model(epochs, model, optimizer, class_criterion)
