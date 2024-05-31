@@ -239,7 +239,7 @@ for epoch in range(NUM_EPOCHS):
         np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
         print(f"Saving model at epoch {epoch + 1}")
         torch.save(model, f'./result/epoch_{epoch + 1}_{path}.pth')
-        torch.save(model_ema, f'/result/ema_epoch_{epoch + 1}_{path}.pth')
+        torch.save(model_ema, f'./result/ema_epoch_{epoch + 1}_{path}.pth')
 
 fig = plt.figure(figsize=(20, 10))
 ax1 = fig.add_subplot(121)
@@ -269,5 +269,5 @@ np.save("result/" + path + "_train_accuracy.npy", np.array(train_accuracy))
 np.save("result/" + path + "_test_class_loss_ema.npy", np.array(test_class_loss_ema))
 np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
 
-torch.save(model, f'epoch_{epoch + 1}_{path}.pth')
-torch.save(model_ema, f'ema_{epoch + 1}_{path}.pth')
+torch.save(model, f'./result/epoch_{epoch + 1}_{path}.pth')
+torch.save(model_ema, f'./result/ema_epoch_{epoch + 1}_{path}.pth')
