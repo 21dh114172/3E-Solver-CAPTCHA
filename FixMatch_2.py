@@ -271,4 +271,4 @@ np.save("result/" + path + "_train_accuracy.npy", np.array(train_accuracy))
 np.save("result/" + path + "_test_class_loss_ema.npy", np.array(test_class_loss_ema))
 np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
 
-save_model(epoch, model, optimizer, class_criterion)
+save_model(args.epoch, model, optimizer, class_criterion)
