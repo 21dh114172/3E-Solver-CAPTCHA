@@ -102,7 +102,7 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
         captcha_array = np.array(captcha_image)
 
         img_buffer[i] = captcha_array
-
+    
         if train:
             if label:
                 text = label_dict[filename.split("/")[-1]]
@@ -111,7 +111,13 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
 
         if label:
             text = ("^" + text + "$")
-            text_buffer.append([token2id[i] for i in text.ljust(MAXLEN + 2)])
+            try:
+                text_buffer.append([token2id[i] for i in text.ljust(MAXLEN + 2)])
+            except:
+                print("Token 2 id: ")
+                print(token2id)
+                print("Text: ")
+                print(text)
         else:
             text_buffer.append([-1] * (MAXLEN + 2))
 
