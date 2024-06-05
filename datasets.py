@@ -63,16 +63,11 @@ def get_label_dict(args):
 
 def get_vocab(label_dict):
     all_labels = "".join([value for value in label_dict.values()])
-    if all_labels.isdigit():
-        return string.digits
-    elif all_labels.isalpha():
-        return string.ascii_lowercase
-    elif all_labels.isalnum():
-        return string.digits + string.ascii_lowercase
-    elif all_labels.replace("-", "").isalnum():
-        return string.digits + string.ascii_lowercase + '-'
-    else:
-        raise Exception("Label files must consist only of numbers and English letters")
+    vocab = set(all_labels)
+    
+    ordered_vocab = sorted(vocab, key=lambda x: (x.isdigit(), x.islower(), x))
+    
+    return "".join(ordered_vocab)
 
 
 def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
