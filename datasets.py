@@ -119,6 +119,10 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
                 print(token2id)
                 print("Text: ")
                 print(text)
+                print("Vocab: ")
+                print(vocab)
+                print("Label dict: ")
+                print(label_dict)
                 sys.exit(1)
         else:
             text_buffer.append([-1] * (MAXLEN + 2))
