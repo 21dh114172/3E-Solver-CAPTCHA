@@ -5,6 +5,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from augment import weak, strong, normalize
 import random
+import sys
 
 def load_datasets(args):
     label_dict = get_label_dict(args)
@@ -118,6 +119,7 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
                 print(token2id)
                 print("Text: ")
                 print(text)
+                sys.exit(1)
         else:
             text_buffer.append([-1] * (MAXLEN + 2))
 
