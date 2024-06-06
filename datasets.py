@@ -103,7 +103,8 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
             if label:
                 text = label_dict[filename.split("/")[-1]]
         else:
-            text = filename.split("/")[-1].split(".")[0]
+            #text = filename.split("/")[-1].split(".")[0] # get label from file name
+            text = label_dict[filename.split("/")[-1]]
 
         if label:
             text = ("^" + text + "$")
