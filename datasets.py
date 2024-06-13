@@ -90,7 +90,8 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
 
     img_buffer = np.zeros((len(filenames), TARGET_HEIGHT, TARGET_WIDTH, 3), dtype=np.uint8)
     text_buffer = []
-
+    print(label_dict)
+    sys.exit(1)
     for i, filename in enumerate(filenames):
         captcha_image = Image.open(filename).resize((TARGET_WIDTH, TARGET_HEIGHT), Image.ANTIALIAS)
         if captcha_image.mode != 'RGB':
@@ -98,13 +99,13 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
         captcha_array = np.array(captcha_image)
 
         img_buffer[i] = captcha_array
-    
         if train:
             if label:
                 text = label_dict[filename.split("/")[-1]]
         else:
             #text = filename.split("/")[-1].split(".")[0] # get label from file name
             text = label_dict[filename.split("/")[-1]]
+            
 
         if label:
             text = ("^" + text + "$")
