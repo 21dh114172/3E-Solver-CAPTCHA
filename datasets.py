@@ -111,8 +111,9 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
             try:
                 text = label_dict[filename.split("/")[-1]]
             except:
-                print(label_dict)
+                print(label)
                 print(filename.split("/")[-1])
+                print(label_dict)
                 sys.exit(1)
             
 
