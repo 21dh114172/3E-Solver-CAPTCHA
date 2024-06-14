@@ -101,7 +101,7 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
         if train:
             if label:
                 text = label_dict[filename.split("/")[-1]]
-                if not isPrint:
+                if isPrint == False:
                     isPrint = True
                     print("Train label:")
                     print(filename.split("/")[-1])
