@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch
 import numpy as np
 
-def save_model(epochs, model, optimizer, criterion):
+def save_model(epochs, model, optimizer, criterion, model_name="final_model.pth"):
     """
     Function to save the trained model to disk.
     """
@@ -13,7 +13,8 @@ def save_model(epochs, model, optimizer, criterion):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': criterion,
-                }, 'result/final_model.pth')
+                }, f'result/{model_name}')
+    torch.save(model, f'result/embed_{model_name}')
 
 class SaveBestModel:
     """
