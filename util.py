@@ -28,7 +28,7 @@ class SaveBestModel:
         
     def __call__(
         self, current_valid_loss, 
-        epoch, model, optimizer, criterion
+        epoch, model, optimizer, criterion, model_name="best_model.pth"
     ):
         if current_valid_loss < self.best_valid_loss:
             self.best_valid_loss = current_valid_loss
@@ -39,8 +39,8 @@ class SaveBestModel:
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': criterion,
-                }, 'result/best_model.pth')
-            torch.save(model, 'result/embed_best_model.pth')
+                }, f'result/{model_name}')
+            torch.save(model, f'result/embed_{model_name}')
             
 def sigmoid_rampup(current, rampup_length):
     current = np.clip(current, 0.0, rampup_length)
