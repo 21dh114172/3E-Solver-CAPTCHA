@@ -40,6 +40,7 @@ class SaveBestModel:
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': criterion,
                 }, 'result/best_model.pth')
+            torch.save(model, 'result/embed_best_model.pth')
             
 def sigmoid_rampup(current, rampup_length):
     current = np.clip(current, 0.0, rampup_length)
