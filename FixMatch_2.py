@@ -52,8 +52,6 @@ NUM_EPOCHS = args.epoch
 dataloader_train_labeled, dataloader_train_nolabeled, dataloader_test, id2token, MAXLEN, _ = load_datasets_mean_teacher(
     args)
 
-print(id2token)
-sys.exit(1)
 print("token:", "".join(list(id2token.values())))
 
 model = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN)
