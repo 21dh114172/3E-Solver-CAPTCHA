@@ -32,7 +32,8 @@ parser.add_argument('--lr', default=0.02, type=float, help='learning rate')
 parser.add_argument('--seed', default=42, type=int, help='running seed')
 parser.add_argument('--save-epoch', default=50, type=int, help='save model per epoch')
 parser.add_argument('--wait-save-best-epoch', default=30, type=int, help='wait until epoch to save best model')
-parser.add_argument('--delimiter-label', default=' ', type=str, help='wait until epoch to save best model')
+parser.add_argument('--delimiter-label', default=' ', type=str, help='delimiter in label file')
+parser.add_argument('--hidden-size', default=128, type=int, help='hidden size for prediction layer')
 
 args = parser.parse_args()
 
@@ -54,8 +55,8 @@ dataloader_train_labeled, dataloader_train_nolabeled, dataloader_test, id2token,
 
 print("token:", "".join(list(id2token.values())))
 
-model = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN)
-model_ema = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN)
+model = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size)
+model_ema = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size)
 
 class_criterion = Seq2SeqLoss()
 consistent_criterion = ConsistentLoss(args.threshold)
