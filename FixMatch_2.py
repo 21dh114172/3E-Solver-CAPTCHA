@@ -32,7 +32,7 @@ parser.add_argument('--lr', default=0.02, type=float, help='learning rate')
 parser.add_argument('--seed', default=42, type=int, help='running seed')
 parser.add_argument('--save-epoch', default=50, type=int, help='save model per epoch')
 parser.add_argument('--wait-save-best-epoch', default=30, type=int, help='wait until epoch to save best model')
-
+parser.add_argument('--delimiter-label', default=' ', type=str, help='wait until epoch to save best model')
 
 args = parser.parse_args()
 
