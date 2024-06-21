@@ -53,10 +53,11 @@ def load_datasets_mean_teacher(args):
 
 
 def get_label_dict(args):
+    delimiter = args.delimiter_label
     label_path = './dataset/' + args.dataset + '/label/' + args.label
     f = open(label_path, 'r')
     lines = f.read().strip().split("\n")
-    label_dict = {line.split(" ")[0]: line.split(" ")[1] for line in lines}
+    label_dict = {line.split(delimiter)[0]: line.split(delimiter)[1] for line in lines}
     f.close()
     return label_dict
 
