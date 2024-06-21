@@ -34,6 +34,8 @@ parser.add_argument('--save-epoch', default=50, type=int, help='save model per e
 parser.add_argument('--wait-save-best-epoch', default=30, type=int, help='wait until epoch to save best model')
 parser.add_argument('--delimiter-label', default=' ', type=str, help='delimiter in label file')
 parser.add_argument('--hidden-size', default=128, type=int, help='hidden size for prediction layer')
+parser.add_argument('--TARGET-HEIGHT', default=64, type=int, help='resize image height to target height')
+parser.add_argument('--TARGET-WIDTH', default=128, type=int, help='resize image width to target width')
 
 args = parser.parse_args()
 
