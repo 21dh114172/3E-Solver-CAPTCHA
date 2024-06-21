@@ -78,8 +78,8 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
         assert loader_len is None
 
     MAXLEN = max([len(value) for value in label_dict.values()])
-    TARGET_HEIGHT = 64
-    TARGET_WIDTH = 128
+    TARGET_HEIGHT = args.TARGET_HEIGHT
+    TARGET_WIDTH = args.TARGET_WIDTH
 
     vocab = get_vocab(label_dict)
     vocab += ' '
