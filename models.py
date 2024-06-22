@@ -12,8 +12,8 @@ class CNNSeq2Seq(nn.Module):
         self.max_len = max_len
 
         self.backbone = CNN()
-        self.encoder = Encoder()
-        self.decoder = HybirdDecoder(vocab_size=vocab_size)
+        self.encoder = Encoder(rnn_hidden_size=hidden_size)
+        self.decoder = HybirdDecoder(vocab_size=vocab_size, hidden_size=hidden_size)
         self.prediction = nn.Linear(hidden_size, vocab_size)
 
         for m in self.modules():
