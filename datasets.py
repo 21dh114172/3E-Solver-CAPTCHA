@@ -64,6 +64,7 @@ def get_label_dict(args):
 
 def get_vocab(label_dict):
     all_labels = "".join([value for value in label_dict.values()])
+    print(all_labels)
     vocab = set(all_labels)
     ordered_vocab = sorted(vocab, key=lambda x: (x.isdigit(), x.islower(), x))
     
