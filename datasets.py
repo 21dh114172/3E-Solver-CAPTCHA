@@ -1,7 +1,7 @@
 import numpy as np
 import string
 import glob
-from PIL import Image
+from PIL import Image, ImageOps
 from torch.utils.data import DataLoader, Dataset
 from augment import weak, strong, normalize
 import random
@@ -93,8 +93,10 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
     isPrint = False
     for i, filename in enumerate(filenames):
         captcha_image = Image.open(filename).resize((TARGET_WIDTH, TARGET_HEIGHT), Image.ANTIALIAS)
+        
         if captcha_image.mode != 'RGB':
             captcha_image = captcha_image.convert("RGB")
+        captcha_image = ImageOps.grayscale(captcha_image)
         captcha_array = np.array(captcha_image)
         
         img_buffer[i] = captcha_array

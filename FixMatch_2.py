@@ -36,6 +36,7 @@ parser.add_argument('--delimiter-label', default=' ', type=str, help='delimiter 
 parser.add_argument('--hidden-size', default=128, type=int, help='hidden size for prediction layer')
 parser.add_argument('--TARGET-HEIGHT', default=64, type=int, help='resize image height to target height')
 parser.add_argument('--TARGET-WIDTH', default=128, type=int, help='resize image width to target width')
+parser.add_argument('--use-abi-group', default=True, type=bool, help='use ABI Group strategy')
 
 args = parser.parse_args()
 
