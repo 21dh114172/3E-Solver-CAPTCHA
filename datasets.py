@@ -88,7 +88,7 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
     id2token[len(vocab) + 1] = '$'
     token2id = {v: k for k, v in id2token.items()}
 
-    img_buffer = np.zeros((len(filenames), TARGET_HEIGHT, TARGET_WIDTH, 1), dtype=np.uint8)
+    img_buffer = np.zeros((len(filenames), TARGET_HEIGHT, TARGET_WIDTH), dtype=np.uint8)
     text_buffer = []
     isPrint = False
     for i, filename in enumerate(filenames):
