@@ -18,7 +18,7 @@ class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
         
-        self.resblk_1 = ResBlk(1, 32)
+        self.resblk_1 = ResBlk(3, 32)
         self.maxpool_1 = nn.MaxPool2d(kernel_size=2)
         self.dropout_1 = nn.Dropout(0.1)
         
