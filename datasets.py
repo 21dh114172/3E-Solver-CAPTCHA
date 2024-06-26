@@ -101,8 +101,8 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
         img_buffer[i] = captcha_array
         if train:
             if label:
-                #text = label_dict[filename.split("/")[-1]]
-                text = label_dict.get(filename.split("/")[-1], filename.split("/")[-1].split(".")[0])
+                text = label_dict[filename.split("/")[-1]]
+                #text = label_dict.get(filename.split("/")[-1], filename.split("/")[-1].split(".")[0])
                 if not isPrint:
                     isPrint = True
                     print("Train label:")
@@ -111,8 +111,8 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
         else:
             #text = filename.split("/")[-1].split(".")[0] # get label from file name
             try:
-                #text = label_dict[filename.split("/")[-1]]
-                text = label_dict.get(filename.split("/")[-1], filename.split("/")[-1].split(".")[0])
+                text = label_dict[filename.split("/")[-1]]
+                #text = label_dict.get(filename.split("/")[-1], filename.split("/")[-1].split(".")[0])
             except:
                 print(label)
                 print(filename.split("/")[-1])
