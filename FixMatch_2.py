@@ -218,7 +218,7 @@ for epoch in range(NUM_EPOCHS):
                 test_class_loss[-1], epoch, model, optimizer, class_criterion
         )
         save_best_model(
-                test_class_loss_ema[-1], epoch, model, optimizer, class_criterion, model_name="ema_best_model.pth"
+                test_class_loss_ema[-1], epoch, model_ema, optimizer, class_criterion, model_name="ema_best_model.pth"
         )
         
     
