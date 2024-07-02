@@ -181,7 +181,7 @@ for epoch in range(NUM_EPOCHS):
     test_accuracy.append(accuracy / total)
     print("test loss: {}\n"
           "accuracy {} accclevel {}".format(test_class_loss[-1], test_accuracy[-1], test_accclevel[-1]))
-    print(f"{accuracy}/{total}")
+    print(f"Model predict match groundtruth: {accuracy}/{total}")
     model = model.train()
 
     model_ema = model_ema.eval()
@@ -210,7 +210,7 @@ for epoch in range(NUM_EPOCHS):
     test_accuracy_ema.append(accuracy / total)
     print("test loss ema: {}\n"
           "accuracy {} accclevel {}".format(test_class_loss_ema[-1], test_accuracy_ema[-1], test_accclevel_ema[-1]))
-    print(f"Predict match groundtruth: {accuracy}/{total}")
+    print(f"Model_ema predict match groundtruth: {accuracy}/{total}")
     model_ema = model_ema.train()
 
     print(f"epoch time {time.time()-time_epoch}\n")
