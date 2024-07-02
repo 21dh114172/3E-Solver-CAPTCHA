@@ -208,9 +208,9 @@ for epoch in range(NUM_EPOCHS):
     test_class_loss_ema.append(loss / len(dataloader_test))
     test_accclevel_ema.append(accclevel / total)
     test_accuracy_ema.append(accuracy / total)
-    print("test loss: {}\n"
+    print("test loss ema: {}\n"
           "accuracy {} accclevel {}".format(test_class_loss_ema[-1], test_accuracy_ema[-1], test_accclevel_ema[-1]))
-    print(f"{accuracy}/{total}")
+    print(f"Predict match groundtruth: {accuracy}/{total}")
     model_ema = model_ema.train()
 
     print(f"epoch time {time.time()-time_epoch}\n")
