@@ -93,6 +93,7 @@ test_class_loss_ema = []
 test_accclevel_ema = []
 test_accuracy_ema = []
 save_best_model = SaveBestModel()
+save_best_model_ema = SaveBestModel()
 for epoch in range(NUM_EPOCHS):
     time_epoch = time.time()
     loss_1 = loss_2 = loss_mt = accuracy = accclevel = 0
@@ -217,7 +218,7 @@ for epoch in range(NUM_EPOCHS):
         save_best_model(
                 test_class_loss[-1], epoch, model, optimizer, class_criterion
         )
-        save_best_model(
+        save_best_model_ema(
                 test_class_loss_ema[-1], epoch, model_ema, optimizer, class_criterion, model_name="ema_best_model.pth"
         )
         
