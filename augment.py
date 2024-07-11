@@ -1,6 +1,7 @@
 import torchvision.transforms as transforms
 import random
 import numpy as np
+import cv2
 import PIL
 import PIL.ImageOps
 import PIL.ImageEnhance
@@ -104,6 +105,54 @@ def TranslateY(img, v, max_v, bias=0):
         v = -v
     v = int(v * img.size[1])
     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
+
+# image must be preprocess to clear noise before using this augment
+def RotateCentroidCharacter(img, angle = 180, angle_multiply = 1.5):
+    numpy_image = numpy.array(img)  
+    
+    opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR) 
+    # Threshold the image
+    _, thresh = cv2.threshold(opencv_image, 128, 255, cv2.THRESH_BINARY_INV)
+    
+    # Find connected components
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(thresh, connectivity=8)
+    
+    # Filter and merge small components
+    min_area = 170  # Define a threshold area for small components
+    for i in range(1, num_labels):
+        if stats[i, cv2.CC_STAT_AREA] < min_area:
+            # Calculate distances to other centroids and find the nearest larger component
+            distances = distance.cdist([centroids[i]], centroids[1:], 'euclidean')[0]
+            valid_distances = distances[stats[1:, cv2.CC_STAT_AREA] >= min_area]
+            if len(valid_distances) > 0:
+                nearest_larger = np.argmin(valid_distances)
+                labels[labels == i] = nearest_larger + 1
+    
+    # Recalculate centroids
+    new_centroids = np.array([np.mean(np.argwhere(labels == i), axis=0) for i in range(1, num_labels) if np.any(labels == i)])
+    
+    # Fit a line through the centroids
+    X = new_centroids[:, 1].reshape(-1, 1)  # X coordinates (columns)
+    y = new_centroids[:, 0]  # y coordinates (rows)
+    reg = LinearRegression().fit(X, y)
+    slope = reg.coef_[0]
+    intercept = reg.intercept_
+    
+    
+    # Calculate the angle of rotation
+    angle = np.arctan(slope) * (angle / np.pi)
+    angle *= angle_multiply
+    
+    # Calculate the center of the image for rotation
+    center = (thresh.shape[1] // 3, thresh.shape[0] // 3)
+    
+    # Get the rotation matrix
+    rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1)
+    
+    # Perform the affine transformation (rotation)
+    rotated_image = cv2.warpAffine(thresh, rotation_matrix, (thresh.shape[1], thresh.shape[0]), flags=cv2.INTER_LINEAR)
+    color_converted = cv2.cvtColor(rotated_image, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(color_converted)
 
 
 def _float_parameter(v, max_v):
