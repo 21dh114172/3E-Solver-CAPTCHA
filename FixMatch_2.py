@@ -84,7 +84,7 @@ optimizer = optim.SGD(params, lr=LR, momentum=0.9, weight_decay=5e-4, nesterov=T
 
 is_model_path_empty = args.load_model == '' and args.load_model_ema == ''
 is_model_path_exist = not is_model_path_empty if os.path.exists(args.load_model) and os.path.exists(args.load_model_ema) else False
-if (not is_model_path_empty && is_model_path_exist):
+if (not is_model_path_empty and is_model_path_exist):
     checkpoint = torch.load(args.load_model)
     checkpoint_ema = torch.load(args.load_model_ema)
     
