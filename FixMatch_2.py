@@ -37,6 +37,9 @@ parser.add_argument('--hidden-size', default=128, type=int, help='hidden size fo
 parser.add_argument('--TARGET-HEIGHT', default=64, type=int, help='resize image height to target height')
 parser.add_argument('--TARGET-WIDTH', default=128, type=int, help='resize image width to target width')
 parser.add_argument('--use-abi-group', default=True, type=bool, help='use ABI Group strategy')
+parser.add_argument('--load-model', default='', type=str, help='path to previous model')
+parser.add_argument('--load-model-ema', default='', type=str, help='path to previous ema model')
+
 
 args = parser.parse_args()
 
@@ -78,6 +81,28 @@ for param_main, param_ema in zip(model.parameters(), model_ema.parameters()):
 
 params = list(filter(lambda p: p.requires_grad, model.parameters()))
 optimizer = optim.SGD(params, lr=LR, momentum=0.9, weight_decay=5e-4, nesterov=True)
+
+is_model_path_empty = args.load_model == '' and args.load_model_ema == ''
+is_model_path_exist = not is_model_path_empty ? os.path.exists(args.load_model) and os.path.exists(args.load_model_ema) : False
+if (not is_model_path_empty && is_model_path_exist):
+    checkpoint = torch.load(args.load_model)
+    checkpoint_ema = torch.load(args.load_model_ema)
+    
+    model.load_state_dict(checkpoint["model_state_dict"])
+    model_ema.load_state_dict(checkpoint_ema["model_state_dict"])
+    
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    model.train()
+    model_ema.train()
+    print(f"Loaded previous model from {args.load_model}")
+else:
+    print(f"Create model from scratch")
+    
+    
+    
+    
+    
 
 train_loss_class = []
 train_loss_consistency = []
