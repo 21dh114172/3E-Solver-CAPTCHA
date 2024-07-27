@@ -88,7 +88,7 @@ is_model_path_exist = not is_model_path_empty if os.path.exists(args.load_model)
 if (not is_model_path_empty and is_model_path_exist):
     checkpoint = torch.load(args.load_model)
     checkpoint_ema = torch.load(args.load_model_ema)
-    
+    print(model.state_dict())
     model.load_state_dict(checkpoint["model_state_dict"])
     model_ema.load_state_dict(checkpoint_ema["model_state_dict"])
     
