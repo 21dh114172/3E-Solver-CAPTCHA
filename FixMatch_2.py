@@ -15,6 +15,7 @@ from util import compute_seq_acc, Seq2SeqLoss, ConsistentLoss, ConsistentLoss_MT
     get_current_consistency_weight, SaveBestModel, save_model
 import random
 import time
+import os
 
 parser = argparse.ArgumentParser(description='PyTorch Captcha Training Using Mean-Teacher')
 
@@ -98,11 +99,6 @@ if (not is_model_path_empty and is_model_path_exist):
     print(f"Loaded previous model from {args.load_model}")
 else:
     print(f"Create model from scratch")
-    
-    
-    
-    
-    
 
 train_loss_class = []
 train_loss_consistency = []
