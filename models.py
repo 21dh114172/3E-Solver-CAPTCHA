@@ -90,3 +90,24 @@ class CNNSeq2Seq(nn.Module):
             outputs.append(output.unsqueeze(1))
 
         return vocab_out, torch.cat(outputs, dim=1)
+    def forward(self, x):         
+        out = self.backbone(x)
+        encoder_outputs = self.encoder(out)
+
+        outputs = []
+        batch_size = x.size(0)
+        input = torch.zeros([batch_size]).long()
+        if USE_CUDA:
+            input = input.cuda()
+
+        last_hidden = Variable(torch.zeros(self.decoder.num_rnn_layers, batch_size, self.decoder.hidden_size))
+        if USE_CUDA:
+            last_hidden = last_hidden.cuda()
+
+        for i in range(self.max_len-1):
+            output, last_hidden = self.decoder.forward_step(input, last_hidden, encoder_outputs)
+            output = self.prediction(output)
+            input = output.max(1)[1]
+            outputs.append(output.unsqueeze(1))
+
+        return torch.cat(outputs, dim=1)
