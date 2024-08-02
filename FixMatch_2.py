@@ -40,7 +40,7 @@ parser.add_argument('--TARGET-WIDTH', default=128, type=int, help='resize image 
 parser.add_argument('--use-abi-group', default=True, type=bool, help='use ABI Group strategy')
 parser.add_argument('--load-model', default='', type=str, help='path to previous model')
 parser.add_argument('--load-model-ema', default='', type=str, help='path to previous ema model')
-parser.add_argument('--use-optimizer-loaded', default=True, type=bool, help='use optimizer from loaded model to continue train')
+parser.add_argument('--use-new-optimizer', action="store_false", type=bool, help='create new optimizer for loaded model (Default: True)')
 
 
 args = parser.parse_args()
@@ -91,9 +91,8 @@ if (not is_model_path_empty and is_model_path_exist):
     checkpoint_ema = torch.load(args.load_model_ema)
     model.load_state_dict(checkpoint["model_state_dict"])
     model_ema.load_state_dict(checkpoint_ema["model_state_dict"])
-    if args.use_optimizer_loaded:
+    if not args.use_new_optimizer:
         print(f"Loaded optimizer from model {args.load_model}")
-        
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     model.train()
