@@ -40,7 +40,7 @@ parser.add_argument('--TARGET-WIDTH', default=128, type=int, help='resize image 
 parser.add_argument('--use-abi-group', default=True, type=bool, help='use ABI Group strategy')
 parser.add_argument('--load-model', default='', type=str, help='path to previous model')
 parser.add_argument('--load-model-ema', default='', type=str, help='path to previous ema model')
-parser.add_argument('--use-new-optimizer', action="store_true", type=bool, help='create new optimizer for loaded model (Default: False)')
+parser.add_argument('--use-new-optimizer', action="store_true", help='create new optimizer for loaded model (Default: False)')
 
 
 args = parser.parse_args()
