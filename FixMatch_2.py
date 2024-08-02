@@ -92,14 +92,16 @@ if (not is_model_path_empty and is_model_path_exist):
     model.load_state_dict(checkpoint["model_state_dict"])
     model_ema.load_state_dict(checkpoint_ema["model_state_dict"])
     if not args.use_new_optimizer:
-        print(f"Loaded optimizer from model {args.load_model}")
+        print(f"Loaded optimizer from model {args.load_model} \n")
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    else:
+        print(f"Create new optimizer \n")
 
     model.train()
     model_ema.train()
     print(f"Loaded previous model from {args.load_model}")
 else:
-    print(f"Create model from scratch")
+    print(f"Create model from scratch \n")
 
 train_loss_class = []
 train_loss_consistency = []
