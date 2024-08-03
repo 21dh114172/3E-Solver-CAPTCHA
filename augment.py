@@ -201,12 +201,12 @@ class RandAugmentMC(object):
 
 
 weak = transforms.Compose([
-            transforms.RandomCrop(size=(64, 128),
+            transforms.RandomCrop(size=(80, 180),
                                   padding=(8, 16),
                                   padding_mode='reflect')])
 
 strong = transforms.Compose([
-            transforms.RandomCrop(size=(64, 128),
+            transforms.RandomCrop(size=(80, 180),
                                   padding=(8, 16),
                                   padding_mode='reflect'),
             RandAugmentMC(n=2, m=10)])
@@ -217,7 +217,7 @@ normalize = transforms.Compose([
 
 MT = transforms.Compose([
         transforms.RandomRotation(10),
-        transforms.RandomCrop(size=(64, 128),
+        transforms.RandomCrop(size=(80, 180),
                               padding=(8, 16),
                               padding_mode='reflect'),
         transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),
