@@ -9,7 +9,7 @@ import sys
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-from datasets import load_datasets_mean_teacher, get_label_dict
+from datasets import load_datasets_mean_teacher, get_label_dict, get_vocab
 from models import CNNSeq2Seq
 from util import compute_seq_acc, Seq2SeqLoss, ConsistentLoss, ConsistentLoss_MT_Temperature, \
     get_current_consistency_weight, SaveBestModel, save_model
@@ -67,9 +67,10 @@ if (not is_model_path_empty and not is_model_path_exist):
 dataloader_train_labeled, dataloader_train_nolabeled, dataloader_test, id2token, MAXLEN, _ = load_datasets_mean_teacher(
     args)
 
-label_dict = get_label_dict(args)
+vocab = get_vocab(get_label_dict(args))
 
 print("token:", "".join(list(id2token.values())))
+print("vocab:", vocab)
 
 model = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size)
 model_ema = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size)
@@ -246,10 +247,10 @@ for epoch in range(NUM_EPOCHS):
     print(f"epoch time {time.time()-time_epoch}\n")
     if (epoch + 1) >= args.wait_save_best_epoch:
         save_best_model(
-                test_class_loss[-1], epoch, model, optimizer, class_criterion, label_dict=label_dict, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH 
+                test_class_loss[-1], epoch, model, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH 
         )
         save_best_model_ema(
-                test_class_loss_ema[-1], epoch, model_ema, optimizer, class_criterion, label_dict=label_dict, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH, model_name="ema_best_model.pth"
+                test_class_loss_ema[-1], epoch, model_ema, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH, model_name="ema_best_model.pth"
         )
         
     
@@ -311,5 +312,5 @@ np.save("result/" + path + "_train_accuracy.npy", np.array(train_accuracy))
 np.save("result/" + path + "_test_class_loss_ema.npy", np.array(test_class_loss_ema))
 np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
 
-save_model(args.epoch, model, optimizer, class_criterion, label_dict=label_dict, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH)
-save_model(args.epoch, model_ema, optimizer, class_criterion, label_dict=label_dict, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH, model_name="ema_final_model.pth")
+save_model(args.epoch, model, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH)
+save_model(args.epoch, model_ema, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH, model_name="ema_final_model.pth")
