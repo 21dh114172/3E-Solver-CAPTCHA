@@ -41,7 +41,7 @@ parser.add_argument('--use-abi-group', default=True, type=bool, help='use ABI Gr
 parser.add_argument('--load-model', default='', type=str, help='path to previous model')
 parser.add_argument('--load-model-ema', default='', type=str, help='path to previous ema model')
 parser.add_argument('--use-new-optimizer', action="store_true", help='create new optimizer for loaded model (Default: False)')
-parser.add_argument('--use-new-label-dict', action="store_true", help='create new label dict for new dataset from loaded model, might cause mismatch output layer (Default: False)')
+parser.add_argument('--use-new-vocab', action="store_true", help='create new label dict for new dataset from loaded model, might cause mismatch output layer (Default: False)')
 
 
 args = parser.parse_args()

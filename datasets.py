@@ -83,7 +83,7 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
     TARGET_WIDTH = args.TARGET_WIDTH
 
     vocab = get_vocab(label_dict)
-    if not args.use_new_label_dict:
+    if not args.use_new_vocab:
         checkpoint = torch.load(args.load_model)
         loaded_vocab = checkpoint.get("vocab", "")
         if loaded_vocab != "":
