@@ -12,11 +12,6 @@ import json
 def load_datasets(args):
     label_dict = get_label_dict(args)
 
-    if not args.use_new_label_dict:
-        checkpoint = torch.load(args.load_model)
-        loaded_label_dict = checkpoint.get("label_dict", "")
-        label_dict = label_dict if loaded_label_dict == "" else json.loads(loaded_label_dict), print("Loaded label dict from previous model successfully \n")
-
     train_filenames = glob.glob("./dataset/" + args.dataset + "/train/*.*")
     train_filenames = [train_filename for train_filename in train_filenames if
                        train_filename.split("/")[-1] in label_dict]
