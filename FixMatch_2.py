@@ -61,7 +61,7 @@ NUM_EPOCHS = args.epoch
 
 is_model_path_empty = args.load_model == '' and args.load_model_ema == ''
 is_model_path_exist = not is_model_path_empty if os.path.exists(args.load_model) and os.path.exists(args.load_model_ema) else False
-if (not is_model_path_empty and is_model_path_exist):
+if (not is_model_path_empty and not is_model_path_exist):
     raise Exception(f"Could not find previous model from this path, \n\tBase: {args.load_model}\n\tEma:{args.load_model_ema}\n")
 
 dataloader_train_labeled, dataloader_train_nolabeled, dataloader_test, id2token, MAXLEN, _ = load_datasets_mean_teacher(
