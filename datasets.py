@@ -85,8 +85,12 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
     vocab = get_vocab(label_dict)
     if not args.use_new_label_dict:
         checkpoint = torch.load(args.load_model)
-        loaded_label_dict = checkpoint.get("vocab", "")
-        label_dict = label_dict if loaded_label_dict == "" else loaded_label_dict, print("Loaded label dict from previous model successfully \n")
+        loaded_vocab = checkpoint.get("vocab", "")
+        if loaded_vocab != "":
+            vocab = loaded_vocab
+            print("Loaded vocab from previous model \n")
+        else:
+            print("Create new vocab from current dataset \n")
     vocab += ' '
 
     id2token = {k + 1: v for k, v in enumerate(vocab)}
