@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch
 import numpy as np
 
-def save_model(epochs, model, optimizer, criterion, label_dict, id2token, model_name="final_model.pth"):
+def save_model(epochs, model, optimizer, criterion, label_dict, id2token, image_height, image_width, model_name="final_model.pth"):
     """
     Function to save the trained model to disk.
     """
@@ -15,6 +15,8 @@ def save_model(epochs, model, optimizer, criterion, label_dict, id2token, model_
                 'loss': criterion,
                 'label_dict': label_dict,
                 'id2token': id2token,
+                'image_height': image_height,
+                'image_width': image_width,
                 }, f'result/{model_name}')
     torch.save(model, f'result/embed_{model_name}')
 
@@ -31,7 +33,7 @@ class SaveBestModel:
         
     def __call__(
         self, current_valid_loss, 
-        epoch, model, optimizer, criterion, label_dict, id2token, model_name="best_model.pth"
+        epoch, model, optimizer, criterion, label_dict, id2token, image_height, image_width, model_name="best_model.pth"
     ):
         if current_valid_loss < self.best_valid_loss:
             self.best_valid_loss = current_valid_loss
@@ -44,6 +46,8 @@ class SaveBestModel:
                 'loss': criterion,
                 'label_dict': label_dict,
                 'id2token': id2token,
+                'image_height': image_height,
+                'image_width': image_width,
                 }, f'result/{model_name}')
             torch.save(model, f'result/embed_{model_name}')
             
