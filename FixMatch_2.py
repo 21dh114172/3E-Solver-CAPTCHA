@@ -9,7 +9,7 @@ import sys
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-from datasets import load_datasets_mean_teacher
+from datasets import load_datasets_mean_teacher, get_label_dict
 from models import CNNSeq2Seq
 from util import compute_seq_acc, Seq2SeqLoss, ConsistentLoss, ConsistentLoss_MT_Temperature, \
     get_current_consistency_weight, SaveBestModel, save_model
@@ -41,6 +41,7 @@ parser.add_argument('--use-abi-group', default=True, type=bool, help='use ABI Gr
 parser.add_argument('--load-model', default='', type=str, help='path to previous model')
 parser.add_argument('--load-model-ema', default='', type=str, help='path to previous ema model')
 parser.add_argument('--use-new-optimizer', action="store_true", help='create new optimizer for loaded model (Default: False)')
+parser.add_argument('--use-new-label-dict', action="store_true", help='create new label dict for new dataset from loaded model, might cause mismatch output layer (Default: False)')
 
 
 args = parser.parse_args()
@@ -58,8 +59,15 @@ USE_CUDA = torch.cuda.is_available()
 LR = args.lr
 NUM_EPOCHS = args.epoch
 
+is_model_path_empty = args.load_model == '' and args.load_model_ema == ''
+is_model_path_exist = not is_model_path_empty if os.path.exists(args.load_model) and os.path.exists(args.load_model_ema) else False
+if (not is_model_path_empty and is_model_path_exist):
+    raise Exception(f"Could not find previous model from this path, \n\tBase: {args.load_model}\n\tEma:{args.load_model_ema}\n")
+
 dataloader_train_labeled, dataloader_train_nolabeled, dataloader_test, id2token, MAXLEN, _ = load_datasets_mean_teacher(
     args)
+
+label_dict = get_label_dict(args)
 
 print("token:", "".join(list(id2token.values())))
 
@@ -84,8 +92,6 @@ for param_main, param_ema in zip(model.parameters(), model_ema.parameters()):
 params = list(filter(lambda p: p.requires_grad, model.parameters()))
 optimizer = optim.SGD(params, lr=LR, momentum=0.9, weight_decay=5e-4, nesterov=True)
 
-is_model_path_empty = args.load_model == '' and args.load_model_ema == ''
-is_model_path_exist = not is_model_path_empty if os.path.exists(args.load_model) and os.path.exists(args.load_model_ema) else False
 if (not is_model_path_empty and is_model_path_exist):
     checkpoint = torch.load(args.load_model)
     checkpoint_ema = torch.load(args.load_model_ema)
@@ -240,10 +246,10 @@ for epoch in range(NUM_EPOCHS):
     print(f"epoch time {time.time()-time_epoch}\n")
     if (epoch + 1) >= args.wait_save_best_epoch:
         save_best_model(
-                test_class_loss[-1], epoch, model, optimizer, class_criterion
+                test_class_loss[-1], epoch, model, optimizer, class_criterion, label_dict=label_dict, id2token=id2token
         )
         save_best_model_ema(
-                test_class_loss_ema[-1], epoch, model_ema, optimizer, class_criterion, model_name="ema_best_model.pth"
+                test_class_loss_ema[-1], epoch, model_ema, optimizer, class_criterion, label_dict=label_dict, id2token=id2token, model_name="ema_best_model.pth"
         )
         
     
@@ -305,5 +311,5 @@ np.save("result/" + path + "_train_accuracy.npy", np.array(train_accuracy))
 np.save("result/" + path + "_test_class_loss_ema.npy", np.array(test_class_loss_ema))
 np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
 
-save_model(args.epoch, model, optimizer, class_criterion)
-save_model(args.epoch, model_ema, optimizer, class_criterion, model_name="ema_final_model.pth")
+save_model(args.epoch, model, optimizer, class_criterion, label_dict=label_dict, id2token=id2token)
+save_model(args.epoch, model_ema, optimizer, class_criterion, label_dict=label_dict, id2token=id2token, model_name="ema_final_model.pth")
