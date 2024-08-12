@@ -70,8 +70,8 @@ dataloader_train_labeled, dataloader_train_nolabeled, dataloader_test, id2token,
 
 vocab = get_vocab(get_label_dict(args))
 
-print("token:", "".join(list(id2token.values())))
-print("vocab:", vocab)
+print(f"token:{"".join(list(id2token.values()))}")
+print(f"vocab:{vocab}")
 
 model = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size)
 model_ema = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size)
