@@ -199,26 +199,26 @@ class RandAugmentMC(object):
         # img = CutoutAbs(img, int(32*0.5))
         return img
 
+class AugmentData():
+    normalize = transforms.Compose([
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))])
+    def __init__(self, height = 64, width = 128):
+        self.weak = transforms.Compose([
+                    transforms.RandomCrop(size=(height, width),
+                                        padding=(8, 16),
+                                        padding_mode='reflect')])
 
-weak = transforms.Compose([
-            transforms.RandomCrop(size=(80, 240),
-                                  padding=(8, 16),
-                                  padding_mode='reflect')])
+        self.strong = transforms.Compose([
+                    transforms.RandomCrop(size=(height, width),
+                                        padding=(8, 16),
+                                        padding_mode='reflect'),
+                    RandAugmentMC(n=2, m=10)])
 
-strong = transforms.Compose([
-            transforms.RandomCrop(size=(80, 240),
-                                  padding=(8, 16),
-                                  padding_mode='reflect'),
-            RandAugmentMC(n=2, m=10)])
-
-normalize = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))])
-
-MT = transforms.Compose([
-        transforms.RandomRotation(10),
-        transforms.RandomCrop(size=(80, 240),
-                              padding=(8, 16),
-                              padding_mode='reflect'),
-        transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),
-    ])
+        self.MT = transforms.Compose([
+                transforms.RandomRotation(10),
+                transforms.RandomCrop(size=(height, width),
+                                    padding=(8, 16),
+                                    padding_mode='reflect'),
+                transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),
+            ])

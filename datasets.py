@@ -3,7 +3,7 @@ import string
 import glob
 from PIL import Image, ImageOps
 from torch.utils.data import DataLoader, Dataset
-from augment import weak, strong, normalize
+from augment import AugmentData
 import random
 import sys
 
@@ -150,10 +150,10 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
         batch_size = args.secondary_batch_size
 
     if not label:
-        dataset = UnlabelData(image)
+        dataset = UnlabelData(image, TARGET_HEIGHT, TARGET_WIDTH)
         dataloader = DataLoader(dataset, batch_size, shuffle=True, drop_last=True, num_workers=4)
     elif train:
-        dataset = LabelData(image, text, loader_len * batch_size)
+        dataset = LabelData(image, text, loader_len * batch_size, TARGET_HEIGHT, TARGET_WIDTH)
         dataloader = DataLoader(dataset, batch_size, shuffle=True, drop_last=True, num_workers=4)
     else:
         dataset = TestData(image, text)
@@ -162,10 +162,11 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
 
 
 class LabelData(Dataset):
-    def __init__(self, image, text, dataset_len):
+    def __init__(self, image, text, dataset_len, image_height, image_width):
         self.image = image
         self.text = text
         self.dataset_len = dataset_len
+        self.augument = AugmentData(image_height, image_width)
 
     def __len__(self):
         return int(self.dataset_len)
@@ -173,7 +174,7 @@ class LabelData(Dataset):
     def __getitem__(self, index):
         index = index % len(self.image)
         img = Image.fromarray(self.image[index])
-        img = normalize(weak(img))
+        img = AugmentData.normalize(self.augument.weak(img))
         lb = self.text[index]
 
         sample = (img, lb)
@@ -181,16 +182,17 @@ class LabelData(Dataset):
 
 
 class UnlabelData(Dataset):
-    def __init__(self, image):
+    def __init__(self, image, image_height, image_width):
         self.image = image
+        self.augument = AugmentData(image_height, image_width)
 
     def __len__(self):
         return len(self.image)
 
     def __getitem__(self, index):
         img = Image.fromarray(self.image[index])
-        img_1 = normalize(weak(img))
-        img_2 = normalize(strong(img))
+        img_1 = AugmentData.normalize(self.augument.weak(img))
+        img_2 = AugmentData.normalize(self.augument.strong(img))
 
         sample = (img_1, img_2)
         return sample
@@ -206,7 +208,7 @@ class TestData(Dataset):
 
     def __getitem__(self, index):
         img = Image.fromarray(self.image[index])
-        img = normalize(img)
+        img = AugmentData.normalize(img)
         lb = self.text[index]
 
         sample = (img, lb)
