@@ -31,11 +31,6 @@ def load_datasets(args):
 
 def load_datasets_mean_teacher(args):
     label_dict = get_label_dict(args)
-    if not args.use_new_label_dict:
-        checkpoint = torch.load(args.load_model)
-        loaded_label_dict = checkpoint.get("label_dict", "")
-        label_dict = label_dict if loaded_label_dict == "" else json.loads(loaded_label_dict), print("Loaded label dict from previous model successfully \n")
-
 
     labeled_train_filenames = glob.glob("./dataset/" + args.dataset + "/train/*.*")
     labeled_train_filenames = [train_filename for train_filename in labeled_train_filenames if
@@ -93,6 +88,10 @@ def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
     TARGET_WIDTH = args.TARGET_WIDTH
 
     vocab = get_vocab(label_dict)
+    if not args.use_new_label_dict:
+        checkpoint = torch.load(args.load_model)
+        loaded_label_dict = checkpoint.get("vocab", "")
+        label_dict = label_dict if loaded_label_dict == "" else loaded_label_dict, print("Loaded label dict from previous model successfully \n")
     vocab += ' '
 
     id2token = {k + 1: v for k, v in enumerate(vocab)}
