@@ -74,6 +74,7 @@ def get_vocab(label_dict):
 
 def load_vocab(args):
     if not args.vocab == "":
+        print(f"Loaded vocab from argument:{args.vocab}\n")
         return args.vocab
     else:
         checkpoint = torch.load(args.load_model)
