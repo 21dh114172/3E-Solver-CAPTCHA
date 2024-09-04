@@ -8,6 +8,7 @@ import random
 import sys
 import torch
 import json
+import os
 
 def load_datasets(args):
     label_dict = get_label_dict(args)
@@ -73,18 +74,19 @@ def get_vocab(label_dict):
 
 
 def load_vocab(args):
+    is_model_path_empty = args.load_model == '' and args.load_model_ema == ''
+    is_model_path_exist = not is_model_path_empty if os.path.exists(args.load_model) and os.path.exists(args.load_model_ema) else False
     if not args.vocab == "":
         print(f"Loaded vocab from argument:{args.vocab}\n")
         return args.vocab
-    else:
+    elif ( not is_model_path_empty and is_model_path_exist):
         checkpoint = torch.load(args.load_model)
         loaded_vocab = checkpoint.get("vocab", "")
         if loaded_vocab != "":
             print("Loaded vocab from previous model \n")
-            return loaded_vocab
-        else:
-            print("Create new vocab from current dataset \n")
-            return None
+            return loaded_vocab    
+    print("Create new vocab from current dataset \n")
+    return None
         
 def get_dataloader(filenames, label_dict, args, train, label, loader_len=None):
     if train and label:
