@@ -9,7 +9,7 @@ import sys
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-from datasets import load_datasets_mean_teacher, get_label_dict, get_vocab, load_datasets
+from datasets import load_datasets_mean_teacher, get_label_dict, get_vocab
 from models import CNNSeq2Seq
 from util import compute_seq_acc, Seq2SeqLoss, ConsistentLoss, ConsistentLoss_MT_Temperature, \
     get_current_consistency_weight, SaveBestModel, save_model
@@ -65,7 +65,7 @@ is_model_path_exist = not is_model_path_empty if os.path.exists(args.load_model)
 if (not is_model_path_empty and not is_model_path_exist):
     raise Exception(f"Could not find previous model from this path, \n\tBase: {args.load_model}\n\tEma:{args.load_model_ema}\n")
 
-dataloader_train_labeled, dataloader_test, id2token, MAXLEN = load_datasets(
+dataloader_train_labeled, dataloader_train_nolabeled, dataloader_test, id2token, MAXLEN, _ = load_datasets_mean_teacher(
     args)
 
 vocab = get_vocab(get_label_dict(args))
@@ -112,6 +112,8 @@ else:
     print(f"Create model from scratch \n")
 
 train_loss_class = []
+train_loss_consistency = []
+train_loss_consistency_mt = []
 train_accclevel = []
 train_accuracy = []
 
@@ -154,12 +156,15 @@ for epoch in range(NUM_EPOCHS):
         accclevel += acccl
         accuracy += acc
     
-    train_loss_class.append(loss_1 / len(dataloader_train_labeled))
-    train_accclevel.append(accclevel / len(dataloader_train_labeled))
-    train_accuracy.append(accuracy / len(dataloader_train_labeled))
+    train_loss_class.append(loss_1 / len(dataloader_train_nolabeled))
+    train_loss_consistency.append(loss_2 / len(dataloader_train_nolabeled))
+    train_loss_consistency_mt.append(loss_mt / len(dataloader_train_nolabeled))
+    train_accclevel.append(accclevel / len(dataloader_train_nolabeled))
+    train_accuracy.append(accuracy / len(dataloader_train_nolabeled))
     print("{} epoch train\n"
-          "class loss: {} \n"
-          "accuracy {} accclevel {}".format(epoch, train_loss_class[-1], train_accuracy[-1],
+          "class loss: {} consistent loss {} consistent loss mt {}\n"
+          "accuracy {} accclevel {}".format(epoch, train_loss_class[-1], train_loss_consistency[-1],
+                                            train_loss_consistency_mt[-1], train_accuracy[-1],
                                             train_accclevel[-1]))
 
     model = model.eval()
@@ -235,6 +240,8 @@ for epoch in range(NUM_EPOCHS):
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
         ax1.plot(train_loss_class, 'r', label='train_class_loss')
+        ax1.plot(train_loss_consistency, 'y', label='train_consistency_loss')
+        ax1.plot(train_loss_consistency_mt, 'm', label='train_loss_consistency_mt')
         ax1.plot(test_class_loss, 'b', label='test_class_loss')
         ax1.plot(test_class_loss_ema, 'g', label='test_class_loss_ema')
 
@@ -262,6 +269,8 @@ fig = plt.figure(figsize=(20, 10))
 ax1 = fig.add_subplot(121)
 ax2 = fig.add_subplot(122)
 ax1.plot(train_loss_class, 'r', label='train_class_loss')
+ax1.plot(train_loss_consistency, 'y', label='train_consistency_loss')
+ax1.plot(train_loss_consistency_mt, 'm', label='train_loss_consistency_mt')
 ax1.plot(test_class_loss, 'b', label='test_class_loss')
 ax1.plot(test_class_loss_ema, 'g', label='test_class_loss_ema')
 
