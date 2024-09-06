@@ -18,7 +18,7 @@ def load_datasets(args):
                        train_filename.split("/")[-1] in label_dict]
     test_filenames = glob.glob("./dataset/" + args.dataset + "/test/*.*")
 
-    dataloader_train, id2token = get_dataloader(train_filenames, label_dict, args, train=True, label=True)
+    dataloader_train, id2token = get_dataloader(train_filenames, label_dict, args, train=True, label=True, loader_len=len(train_filenames))
     dataloader_test, _ = get_dataloader(test_filenames, label_dict, args, train=False, label=True)
 
     MAXLEN = max([len(value) for value in label_dict.values()])
