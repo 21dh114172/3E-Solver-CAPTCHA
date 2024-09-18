@@ -46,6 +46,8 @@ parser.add_argument('--vocab', default='', type=str, help='Provide vocab for cur
 
 
 args = parser.parse_args()
+args.vocab = os.environ.get("my_vocab", args.vocab)
+args.delimiter_label = os.environ.get("delimiter_label", args.delimiter_label)
 
 SEED = args.seed
 torch.manual_seed(SEED)
