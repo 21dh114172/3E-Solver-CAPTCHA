@@ -33,7 +33,10 @@ remove_equal_if_quotes() {
 duplicate="f"
 echo $SHELL
 echo "Original args $@"
-string="$@"
+string=$(decode "$@")
+echo "$@"
+echo $(decode "$@")
+
 #tokens=(${string//\./ })
 #echo "$tokens"
 IFS='|'
@@ -114,6 +117,9 @@ echo "$vocab"
 echo $args_train
 # if mode == "pretrain" then the script will run the pretrain mode with sh full_train.sh "$@"
 
+export my_vocab="$vocab"
+export delimiter_label="$delimiter"
+
 if [ "$train_mode" = "pretrain" ]; then
     python_file="pretrain.py"
     #args_train="--delimiter-label "${delimiter@Q}" --label $label --vocab "${vocab@Q}" --dataset $dataset_name"$org_args"" ; bash full_train.sh $args_train
@@ -121,7 +127,7 @@ if [ "$train_mode" = "pretrain" ]; then
 # else if mode == "train" then the script will run the train mode with sh train.sh "$@"
 elif [ "$train_mode" = "train" ]; then
     python_file="train.py"
-    bash train.sh $args_train
+    bash train.sh --label $label --dataset $dataset_name $org_args
 else
     echo "Invalid mode, $train_mode"
     exit 1
