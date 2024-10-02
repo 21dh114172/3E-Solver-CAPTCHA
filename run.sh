@@ -18,6 +18,10 @@ remove_quotes() {
     echo "$1" | sed 's/^"//;s/"$//'
 }
 
+decode () {
+  echo "$1" | base64 -d ; echo
+}
+
 remove_equal_if_quotes() {
     if echo "$1" | grep -q '"'; then
         echo "$1" | sed 's/\(.*\)=\(.*"\)/\1 \2/'
