@@ -275,27 +275,26 @@ for epoch in range(NUM_EPOCHS):
         save_best_model_ema(
                 test_class_loss_ema[-1], epoch, model_ema, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH, model_name="ema_best_model.pth"
         )
-        
+    
+    if USE_WANDB:
+        wandb.log(
+            {
+                "epoch": epoch,
+                "train/loss_class": train_loss_class[-1],
+                "train/loss_consistency": train_loss_consistency[-1],
+                "train/loss_consistency_mt": train_loss_consistency_mt[-1],
+                "train/accclevel": train_accclevel[-1],
+                "train/accuracy": train_accuracy[-1],
+                "test/class_loss": test_class_loss[-1],
+                "test/accclevel": test_accclevel[-1],
+                "test/accuracy": test_accuracy[-1],
+                "test/class_loss_ema": test_class_loss_ema[-1],
+                "test/accclevel_ema": test_accclevel_ema[-1],
+                "test/accuracy_ema": test_accuracy_ema[-1]
+            }
+        )
     
     if (epoch + 1) % int(args.save_epoch) == 0:
-        
-        if USE_WANDB:
-            wandb.log(
-                {
-                    "epoch": epoch,
-                    "train/loss_class": train_loss_class[-1],
-                    "train/loss_consistency": train_loss_consistency[-1],
-                    "train/loss_consistency_mt": train_loss_consistency_mt[-1],
-                    "train/accclevel": train_accclevel[-1],
-                    "train/accuracy": train_accuracy[-1],
-                    "test/class_loss": test_class_loss[-1],
-                    "test/accclevel": test_accclevel[-1],
-                    "test/accuracy": test_accuracy[-1],
-                    "test/class_loss_ema": test_class_loss_ema[-1],
-                    "test/accclevel_ema": test_accclevel_ema[-1],
-                    "test/accuracy_ema": test_accuracy_ema[-1]
-                }
-            )
         
         fig = plt.figure(figsize=(20, 10))
         ax1 = fig.add_subplot(121)
