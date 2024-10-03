@@ -3,6 +3,18 @@ import torch.nn.functional as F
 import torch
 import numpy as np
 
+def get_random_samples(dataloader, amount=5):
+    dataset = dataloader.dataset
+    
+    random_indexes = []
+    for i in range(amount):
+        random_indexes.append(int(np.random.random()*len(dataset)))
+    
+    samples = []
+    for index in random_indexes:
+        samples.append(dataset[index])
+    return samples
+
 def save_model(epochs, model, optimizer, criterion, vocab, id2token, image_height, image_width, model_name="final_model.pth"):
     """
     Function to save the trained model to disk.
