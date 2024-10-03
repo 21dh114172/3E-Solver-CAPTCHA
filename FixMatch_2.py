@@ -62,7 +62,7 @@ pprint.pprint(args)
 USE_CUDA = torch.cuda.is_available()
 
 USE_WANDB = True
-if not args.wandb_api_key != None and not args.wandb_api_key == "":
+if args.wandb_api_key != None and args.wandb_api_key != "":
     try:
         wandb.login(key=args.wandb_api_key)
     except:
@@ -123,7 +123,7 @@ if (not is_model_path_empty and is_model_path_exist):
 else:
     print(f"Create model from scratch \n")
 
-wandb_config = args
+wandb_config = vars(args)
 wandb_config["vocab"] = vocab
 wandb_config["token"] = token
 
@@ -277,22 +277,22 @@ for epoch in range(NUM_EPOCHS):
     if (epoch + 1) % int(args.save_epoch) == 0:
         
         if USE_WANDB:
-        wandb.log(
-            {
-                "epoch": epoch,
-                "train_loss_class": train_acc[-1],
-                "train_loss_consistency": train_loss[-1],
-                "train_loss_consistency_mt": val_acc[-1],
-                "train_accclevel": val_loss[-1],
-                "train_accuracy": train_acc[-1],
-                "test_class_loss": train_loss[-1],
-                "test_accclevel": val_acc[-1],
-                "test_accuracy": val_loss[-1],
-                "test_class_loss_ema": train_loss[-1],
-                "test_accclevel_ema": val_acc[-1],
-                "test_accuracy_ema": val_loss[-1]
-            }
-        )
+            wandb.log(
+                {
+                    "epoch": epoch,
+                    "train_loss_class": train_acc[-1],
+                    "train_loss_consistency": train_loss[-1],
+                    "train_loss_consistency_mt": val_acc[-1],
+                    "train_accclevel": val_loss[-1],
+                    "train_accuracy": train_acc[-1],
+                    "test_class_loss": train_loss[-1],
+                    "test_accclevel": val_acc[-1],
+                    "test_accuracy": val_loss[-1],
+                    "test_class_loss_ema": train_loss[-1],
+                    "test_accclevel_ema": val_acc[-1],
+                    "test_accuracy_ema": val_loss[-1]
+                }
+            )
         
         fig = plt.figure(figsize=(20, 10))
         ax1 = fig.add_subplot(121)
