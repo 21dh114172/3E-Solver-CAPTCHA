@@ -16,6 +16,7 @@ from util import compute_seq_acc, Seq2SeqLoss, ConsistentLoss, ConsistentLoss_MT
 import random
 import time
 import os
+import wandb
 
 parser = argparse.ArgumentParser(description='PyTorch Captcha Training Using Mean-Teacher')
 
@@ -43,6 +44,7 @@ parser.add_argument('--load-model-ema', default='', type=str, help='path to prev
 parser.add_argument('--use-new-optimizer', action="store_true", help='create new optimizer for loaded model (Default: False)')
 parser.add_argument('--use-new-vocab', action="store_true", help='create new label dict for new dataset from loaded model, might cause mismatch output layer (Default: False)')
 parser.add_argument('--vocab', default='', type=str, help='Provide vocab for current training session, might cause mismatch output layer (Default: False)')
+parser.add_argument('--wandb_api_key', default='', type=str, help='Provide wandb api key for log tracking')
 
 
 args = parser.parse_args()
@@ -58,6 +60,14 @@ torch.backends.cudnn.benchmark = True
 
 pprint.pprint(args)
 USE_CUDA = torch.cuda.is_available()
+
+USE_WANDB = True
+if not args.wandb_api_key != None and not args.wandb_api_key == "":
+    try:
+        wandb.login(key=args.wandb_api_key)
+    except:
+        print("Can not login with wandb api key, continue without wandb...")
+        USE_WANDB = False
 
 LR = args.lr
 NUM_EPOCHS = args.epoch
@@ -113,6 +123,10 @@ if (not is_model_path_empty and is_model_path_exist):
 else:
     print(f"Create model from scratch \n")
 
+wandb_config = args
+wandb_config["vocab"] = vocab
+wandb_config["token"] = token
+
 train_loss_class = []
 train_loss_consistency = []
 train_loss_consistency_mt = []
@@ -128,6 +142,9 @@ test_accclevel_ema = []
 test_accuracy_ema = []
 save_best_model = SaveBestModel()
 save_best_model_ema = SaveBestModel()
+if USE_WANDB:
+    run = wandb.init(project="3E_CapTrainer", config=wandb_config)
+
 for epoch in range(NUM_EPOCHS):
     time_epoch = time.time()
     loss_1 = loss_2 = loss_mt = accuracy = accclevel = 0
@@ -258,6 +275,25 @@ for epoch in range(NUM_EPOCHS):
         
     
     if (epoch + 1) % int(args.save_epoch) == 0:
+        
+        if USE_WANDB:
+        wandb.log(
+            {
+                "epoch": epoch,
+                "train_loss_class": train_acc[-1],
+                "train_loss_consistency": train_loss[-1],
+                "train_loss_consistency_mt": val_acc[-1],
+                "train_accclevel": val_loss[-1],
+                "train_accuracy": train_acc[-1],
+                "test_class_loss": train_loss[-1],
+                "test_accclevel": val_acc[-1],
+                "test_accuracy": val_loss[-1],
+                "test_class_loss_ema": train_loss[-1],
+                "test_accclevel_ema": val_acc[-1],
+                "test_accuracy_ema": val_loss[-1]
+            }
+        )
+        
         fig = plt.figure(figsize=(20, 10))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122)
