@@ -5,6 +5,7 @@ import matplotlib
 from torch.autograd import Variable
 import pprint
 import sys
+from PIL import Image
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -12,7 +13,7 @@ import numpy as np
 from datasets import load_datasets_mean_teacher, get_label_dict, get_vocab
 from models import CNNSeq2Seq
 from util import compute_seq_acc, Seq2SeqLoss, ConsistentLoss, ConsistentLoss_MT_Temperature, \
-    get_current_consistency_weight, SaveBestModel, save_model
+    get_current_consistency_weight, SaveBestModel, save_model, get_random_samples
 import random
 import time
 import os
@@ -144,6 +145,8 @@ save_best_model = SaveBestModel()
 save_best_model_ema = SaveBestModel()
 if USE_WANDB:
     run = wandb.init(project="3E_CapTrainer", config=wandb_config)
+    wandb.define_metric("train/*", step_metric="epoch")
+    wandb.define_metric("test/*", step_metric="epoch")
 
 for epoch in range(NUM_EPOCHS):
     time_epoch = time.time()
@@ -280,17 +283,17 @@ for epoch in range(NUM_EPOCHS):
             wandb.log(
                 {
                     "epoch": epoch,
-                    "train_loss_class": train_loss_class[-1],
-                    "train_loss_consistency": train_loss_consistency[-1],
-                    "train_loss_consistency_mt": train_loss_consistency_mt[-1],
-                    "train_accclevel": train_accclevel[-1],
-                    "train_accuracy": train_accuracy[-1],
-                    "test_class_loss": test_class_loss[-1],
-                    "test_accclevel": test_accclevel[-1],
-                    "test_accuracy": test_accuracy[-1],
-                    "test_class_loss_ema": test_class_loss_ema[-1],
-                    "test_accclevel_ema": test_accclevel_ema[-1],
-                    "test_accuracy_ema": test_accuracy_ema[-1]
+                    "train/loss_class": train_loss_class[-1],
+                    "train/loss_consistency": train_loss_consistency[-1],
+                    "train/loss_consistency_mt": train_loss_consistency_mt[-1],
+                    "train/accclevel": train_accclevel[-1],
+                    "train/accuracy": train_accuracy[-1],
+                    "test/class_loss": test_class_loss[-1],
+                    "test/accclevel": test_accclevel[-1],
+                    "test/accuracy": test_accuracy[-1],
+                    "test/class_loss_ema": test_class_loss_ema[-1],
+                    "test/accclevel_ema": test_accclevel_ema[-1],
+                    "test/accuracy_ema": test_accuracy_ema[-1]
                 }
             )
         
