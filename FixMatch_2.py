@@ -65,8 +65,8 @@ USE_WANDB = True
 if args.wandb_api_key != None and args.wandb_api_key != "":
     try:
         wandb.login(key=args.wandb_api_key)
-    except:
-        print("Can not login with wandb api key, continue without wandb...")
+    except Exception as e:
+        print("Can not login with wandb api key, continue without wandb...", e)
         USE_WANDB = False
 
 LR = args.lr
@@ -280,17 +280,17 @@ for epoch in range(NUM_EPOCHS):
             wandb.log(
                 {
                     "epoch": epoch,
-                    "train_loss_class": train_acc[-1],
-                    "train_loss_consistency": train_loss[-1],
-                    "train_loss_consistency_mt": val_acc[-1],
-                    "train_accclevel": val_loss[-1],
-                    "train_accuracy": train_acc[-1],
-                    "test_class_loss": train_loss[-1],
-                    "test_accclevel": val_acc[-1],
-                    "test_accuracy": val_loss[-1],
-                    "test_class_loss_ema": train_loss[-1],
-                    "test_accclevel_ema": val_acc[-1],
-                    "test_accuracy_ema": val_loss[-1]
+                    "train_loss_class": train_loss_class[-1],
+                    "train_loss_consistency": train_loss_consistency[-1],
+                    "train_loss_consistency_mt": train_loss_consistency_mt[-1],
+                    "train_accclevel": train_accclevel[-1],
+                    "train_accuracy": train_accuracy[-1],
+                    "test_class_loss": test_class_loss[-1],
+                    "test_accclevel": test_accclevel[-1],
+                    "test_accuracy": test_accuracy[-1],
+                    "test_class_loss_ema": test_class_loss_ema[-1],
+                    "test_accclevel_ema": test_accclevel_ema[-1],
+                    "test_accuracy_ema": test_accuracy_ema[-1]
                 }
             )
         
