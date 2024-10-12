@@ -26,9 +26,9 @@ decode () {
 
 remove_equal_if_quotes() {
     if echo "$1" | grep -q '"'; then
-        echo "$1" | sed 's/\(.*\)=\(.*"\)/\1 \2/'
+        echo "$1" | sed 's/\(.*\)=\(.*"\)/\1 \2/' | sed 's/ "/ /;s/"$//'
     else
-        echo "$1"
+        echo "$1" | sed 's/ "/ /;s/"$//'
     fi
 }
 
@@ -91,10 +91,6 @@ do
         shift
         ;;
 
-        --wandb-api-key=*)
-        wandb_api_key=$(remove_quotes "${i#*=}")
-        shift
-        ;;
 
         # --dataset)
         # dataset="$2"
@@ -135,11 +131,11 @@ export delimiter_label="$delimiter"
 if [ "$train_mode" = "pretrain" ]; then
     python_file="pretrain.py"
     #args_train="--delimiter-label "${delimiter@Q}" --label $label --vocab "${vocab@Q}" --dataset $dataset_name"$org_args"" ; bash full_train.sh $args_train
-    bash full_train.sh --wandb-api-key $wandb_api_key --wandb-run-name $output_model_file --label $label --dataset $dataset_name $org_args
+    bash full_train.sh --wandb-run-name $output_model_file --label $label --dataset $dataset_name $org_args
 # else if mode == "train" then the script will run the train mode with sh train.sh "$@"
 elif [ "$train_mode" = "train" ]; then
     python_file="train.py"
-    bash train.sh --wandb-api-key $wandb_api_key --wandb-run-name $output_model_file --label $label --dataset $dataset_name $org_args
+    bash train.sh --wandb-run-name $output_model_file --label $label --dataset $dataset_name $org_args
 else
     echo "Invalid mode, $train_mode"
     exit 1
