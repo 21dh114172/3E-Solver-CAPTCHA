@@ -43,6 +43,8 @@ parser.add_argument('--load-model-ema', default='', type=str, help='path to prev
 parser.add_argument('--use-new-optimizer', action="store_true", help='create new optimizer for loaded model (Default: False)')
 parser.add_argument('--use-new-vocab', action="store_true", help='create new label dict for new dataset from loaded model, might cause mismatch output layer (Default: False)')
 parser.add_argument('--vocab', default='', type=str, help='Provide vocab for current training session, might cause mismatch output layer (Default: False)')
+parser.add_argument('--wandb-api-key', default='', type=str, help='Provide wandb api key for log tracking')
+parser.add_argument('--wandb-run-name', default='', type=str, help='Provide wandb run name')
 
 
 args = parser.parse_args()

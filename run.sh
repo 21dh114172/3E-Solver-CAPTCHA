@@ -9,6 +9,8 @@ dataset_name=""
 vocab=""
 delimiter=""
 label=""
+output_model_file=""
+wandb_api_key=""
 # read arguments when running the script
 #echo "Arguments: $*"
 org_args=""
@@ -83,6 +85,16 @@ do
         label=$(remove_quotes "${i#*=}")
         shift
         ;;
+        
+        --output-model-file=*)
+        output_model_file=$(remove_quotes "${i#*=}")
+        shift
+        ;;
+
+        --wandb-api-key=*)
+        wandb_api_key=$(remove_quotes "${i#*=}")
+        shift
+        ;;
 
         # --dataset)
         # dataset="$2"
@@ -123,11 +135,11 @@ export delimiter_label="$delimiter"
 if [ "$train_mode" = "pretrain" ]; then
     python_file="pretrain.py"
     #args_train="--delimiter-label "${delimiter@Q}" --label $label --vocab "${vocab@Q}" --dataset $dataset_name"$org_args"" ; bash full_train.sh $args_train
-    bash full_train.sh --label $label --dataset $dataset_name $org_args
+    bash full_train.sh --wandb-api-key $wandb_api_key --wandb-run-name $output_model_file --label $label --dataset $dataset_name $org_args
 # else if mode == "train" then the script will run the train mode with sh train.sh "$@"
 elif [ "$train_mode" = "train" ]; then
     python_file="train.py"
-    bash train.sh --label $label --dataset $dataset_name $org_args
+    bash train.sh --wandb-api-key $wandb_api_key --wandb-run-name $output_model_file --label $label --dataset $dataset_name $org_args
 else
     echo "Invalid mode, $train_mode"
     exit 1
@@ -137,6 +149,6 @@ fi
 if [ -n "$hf_token" ]; then
     huggingface-cli login --token $hf_token
     #7z a -r ./$dataset_name_result.zip ./result > nul
-    zip -q -r ./$dataset_name_result.zip ./result > nul
-    huggingface-cli upload congminh2456/sulre_pac ./$dataset_name_result.zip .
+    zip -q -r ./$output_model_file.zip ./result > nul
+    huggingface-cli upload congminh2456/sulre_pac ./$output_model_file.zip /result/$output_model_file.zip
 fi
