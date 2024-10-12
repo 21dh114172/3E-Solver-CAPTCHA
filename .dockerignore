@@ -1,3 +1,4 @@
 .env
 dataset/*
 result*/
+cmd.txt
