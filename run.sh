@@ -11,6 +11,8 @@ delimiter=""
 label=""
 output_model_file=""
 wandb_api_key=""
+pretrain_model_link=""
+pretrain_model_path=""
 # read arguments when running the script
 #echo "Arguments: $*"
 org_args=""
@@ -91,6 +93,11 @@ do
         shift
         ;;
 
+        --pretrain-model-link=*)
+        pretrain_model_link=$(remove_quotes "${i#*=}")
+        shift
+        ;;
+
 
         # --dataset)
         # dataset="$2"
@@ -120,6 +127,21 @@ if [ -n "$dataset_link" ]; then
     
 fi
 
+if [ -n "$pretrain_model_link" ]; then
+    echo $pretrain_model_link
+    wget -O "./pretrain_model.zip" $pretrain_model_link
+    # unzip into the dataset folder
+    unzip -o -qq "./pretrain_model.zip" -d "./pretrain_model"
+    # remove the zip file
+    rm "./pretrain_model.zip"
+    # get the dataset name from folder in the dataset
+    for file in ./pretrain_model/*.pt*; do
+        pretrain_model_path="${file}"
+    done
+    echo "Pretrain model name: $pretrain_model_path"
+    
+fi
+
 echo "$vocab"
 
 echo $args_train
@@ -128,6 +150,11 @@ echo $args_train
 export my_vocab="$vocab"
 export delimiter_label="$delimiter"
 
+load_pretrain=""
+if [ "$pretrain_model_path" != "" ]; then
+    load_pretrain="--load-model $pretrain_model_path --load-model-ema $pretrain_model_path"
+fi
+
 if [ "$train_mode" = "pretrain" ]; then
     python_file="pretrain.py"
     #args_train="--delimiter-label "${delimiter@Q}" --label $label --vocab "${vocab@Q}" --dataset $dataset_name"$org_args"" ; bash full_train.sh $args_train
@@ -135,7 +162,7 @@ if [ "$train_mode" = "pretrain" ]; then
 # else if mode == "train" then the script will run the train mode with sh train.sh "$@"
 elif [ "$train_mode" = "train" ]; then
     python_file="train.py"
-    bash train.sh --wandb-run-name $output_model_file --label $label --dataset $dataset_name $org_args
+    bash train.sh $load_pretrain --wandb-run-name $output_model_file --label $label --dataset $dataset_name $org_args
 else
     echo "Invalid mode, $train_mode"
     exit 1
