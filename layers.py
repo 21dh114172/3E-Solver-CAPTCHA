@@ -205,5 +205,4 @@ class VCS(nn.Module):
         w = torch.rand_like(img)
         w_scaled = lower + (upper - lower) * w
         
-        print("Color augmentation completed.")
         return img * w_scaled
