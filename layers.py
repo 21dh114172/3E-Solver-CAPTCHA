@@ -206,3 +206,67 @@ class VCS(nn.Module):
         w_scaled = lower + (upper - lower) * w
         
         return img * w_scaled
+
+class VariationalColorShift(nn.Module):
+    def __init__(self):
+        super(VariationalColorShift, self).__init__()
+        self.conv_lower = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1, bias=False)
+        self.conv_upper = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1, bias=False)
+        self.sigmoid = nn.Sigmoid()
+        nn.init.xavier_uniform_(self.conv_lower.weight)
+        nn.init.xavier_uniform_(self.conv_upper.weight)
+
+    def forward(self, img):
+        stats = adaptive_pool(img)
+        lower = self.sigmoid(self.conv_lower(stats))  # (B, C, 1, 1)
+        upper = self.sigmoid(self.conv_upper(stats))  # (B, C, 1, 1)
+
+        # Reshape lower and upper to match img dimensions (B, C, H, W)
+        lower = lower.expand_as(img)
+        upper = upper.expand_as(img)
+
+        # Generate weight matrix for color shift
+        weight = torch.rand_like(img) * (upper - lower) + lower
+        transformed_img = img * weight
+
+        return transformed_img
+
+class DilatedVariationalColorShift(nn.Module):
+    def __init__(self, kernel_size=4, dilation=2, dropout=0.3):
+        super(DilatedVariationalColorShift, self).__init__()
+        self.kernel_size = kernel_size
+        self.dropout = nn.Dropout2d(dropout)
+
+        # Dilated convolutions for feature extraction
+        self.dilated_conv = nn.Conv2d(3, 3*3, kernel_size=kernel_size, dilation=2, padding=((kernel_size - 1) * dilation) // 2, bias=False)
+        
+        # Convolutions to predict upper & lower color shift bounds
+        self.conv_lower = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1, bias=False)
+        self.conv_upper = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1, bias=False)
+
+        self.sigmoid = nn.Sigmoid()
+        
+        # Initialize weights
+        nn.init.xavier_uniform_(self.conv_lower.weight)
+        nn.init.xavier_uniform_(self.conv_upper.weight)
+        nn.init.xavier_uniform_(self.dilated_conv.weight)
+
+    def forward(self, img):
+        """
+        img: (B, C, H, W) - Batch of images (batch size, 3 channels, height, width)
+        """
+        # Extract deeper features using dilated convolution
+        dilated_features = self.dilated_conv(img)  # (B, C, H, W)
+        dilated_features = self.dropout(dilated_features)  # Apply dropout to prevent overfitting
+
+        # Compute statistics from dilated feature maps
+        lower = self.sigmoid(self.conv_lower(dilated_features))  # (B, C, H, W)
+        upper = self.sigmoid(self.conv_upper(dilated_features))  # (B, C, H, W)
+        # Reshape lower and upper to match img dimensions (B, C, H, W)
+        lower = lower.expand_as(img)
+        upper = upper.expand_as(img)
+        # Generate weight matrix for color shift
+        weight = torch.rand_like(img) * (upper - lower) + lower
+        transformed_img = img * weight  # Apply color shift
+
+        return transformed_img
