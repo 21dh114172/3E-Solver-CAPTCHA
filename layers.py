@@ -255,6 +255,7 @@ class DilatedVariationalColorShift(nn.Module):
         """
         img: (B, C, H, W) - Batch of images (batch size, 3 channels, height, width)
         """
+        img = img.unsqueeze(0)  # Add batch dim
         # Extract deeper features using dilated convolution
         dilated_features = self.dilated_conv(img)  # (B, C, H, W)
         dilated_features = self.dropout(dilated_features)  # Apply dropout to prevent overfitting
