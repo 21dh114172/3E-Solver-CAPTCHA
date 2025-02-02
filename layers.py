@@ -217,6 +217,7 @@ class VariationalColorShift(nn.Module):
         nn.init.xavier_uniform_(self.conv_upper.weight)
 
     def forward(self, img):
+        img = img.unsqueeze(0)
         stats = adaptive_pool(img)
         lower = self.sigmoid(self.conv_lower(stats))  # (B, C, 1, 1)
         upper = self.sigmoid(self.conv_upper(stats))  # (B, C, 1, 1)
