@@ -116,7 +116,7 @@ def VCShift(img, v, max_v, bias=0):
     opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR) 
     img_tensor = tensor_transform(opencv_image)
     with torch.no_grad():
-        augmented_img = dilatedVCS(img_tensor).squeeze(0).numpy()
+        augmented_img = different_VCS(img_tensor).squeeze(0).numpy()
     augmented_img = (augmented_img * 255).clip(0, 255).astype(np.uint8)
     augmented_img = np.transpose(augmented_img, (1, 2, 0))  # Convert back to HWC format
     color_converted = cv2.cvtColor(augmented_img, cv2.COLOR_BGR2RGB)
