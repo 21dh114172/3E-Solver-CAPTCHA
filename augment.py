@@ -7,7 +7,9 @@ import PIL.ImageOps
 import PIL.ImageEnhance
 import PIL.ImageDraw
 from PIL import Image
-
+from layers import VCS
+import torch
+vcs = VCS()
 
 PARAMETER_MAX = 10
 
@@ -106,6 +108,18 @@ def TranslateY(img, v, max_v, bias=0):
     v = int(v * img.size[1])
     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
 
+def VCShift(img, v, max_v, bias=0):
+    tensor_transform = transforms.Compose([transforms.ToTensor()])
+    numpy_image = np.array(img)  
+    opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR) 
+    img_tensor = tensor_transform(opencv_image)
+    with torch.no_grad():
+        augmented_img = vcs(img_tensor).squeeze(0).numpy()
+    augmented_img = (augmented_img * 255).clip(0, 255).astype(np.uint8)
+    augmented_img = np.transpose(augmented_img, (1, 2, 0))  # Convert back to HWC format
+    color_converted = cv2.cvtColor(augmented_img, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(color_converted)
+
 # image must be preprocess to clear noise before using this augment
 def RotateCentroidCharacter(img, angle = 180, angle_multiply = 1.5):
     numpy_image = numpy.array(img)  
@@ -197,6 +211,7 @@ class RandAugmentMC(object):
             if random.random() < 0.5:
                 img = op(img, v=v, max_v=max_v, bias=bias)
         # img = CutoutAbs(img, int(32*0.5))
+        img = VCShift(img, None, None)
         return img
 
 class AugmentData():

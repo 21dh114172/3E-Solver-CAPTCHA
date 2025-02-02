@@ -177,3 +177,33 @@ class DotProductAttentionLayer(nn.Module):
         weighted_context = torch.matmul(alpha, value)  # [len, 32] * [32, 256]=[len, 256]
 
         return weighted_context
+
+def adaptive_pool(img_tensor):
+    """Extract min, max, and mean color statistics using adaptive pooling."""
+    max_pool = torch.nn.functional.adaptive_max_pool2d(img_tensor, (1, 1))
+    min_pool = torch.nn.functional.adaptive_max_pool2d(img_tensor, (1, 1))
+    #min_pool = F.adaptive_min_pool2d(img_tensor, (1, 1))
+    
+    avg_pool = torch.nn.functional.adaptive_avg_pool2d(img_tensor, (1, 1))
+    return torch.cat([max_pool, min_pool, avg_pool], dim=1)
+
+class VCS(nn.Module):
+    def __init__(self):
+        super(VCS, self).__init__()
+        self.conv = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1)  # Predict color shift
+        self.sigmoid = nn.Sigmoid()
+    
+    def forward(self, img):
+        img = img.unsqueeze(0)  # Add batch dim
+        stats = adaptive_pool(img)  # Extract statistics
+        color_offset = self.conv(stats)  # Predict shift
+        shift = self.sigmoid(color_offset)  # Normalize shifts
+        lower = 1 - shift
+        upper = 1 + shift
+        
+        # Sample new weights from uniform distribution
+        w = torch.rand_like(img)
+        w_scaled = lower + (upper - lower) * w
+        
+        print("Color augmentation completed.")
+        return img * w_scaled
