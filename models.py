@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 from torch.autograd import Variable
-from layers import CNN, Encoder, HybirdDecoder, VCS
+from layers import CNN, Encoder, HybirdDecoder, VCS, VariationalColorShift, DilatedVariationalColorShift
 
 USE_CUDA = torch.cuda.is_available()
 

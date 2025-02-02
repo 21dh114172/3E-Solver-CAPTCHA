@@ -210,16 +210,18 @@ class VCS(nn.Module):
         return img * w_scaled
 
 class VariationalColorShift(nn.Module):
-    def __init__(self):
+    def __init__(self, augment_img = False):
         super(VariationalColorShift, self).__init__()
         self.conv_lower = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1, bias=False)
         self.conv_upper = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1, bias=False)
         self.sigmoid = nn.Sigmoid()
+        self.augment_img = augment_img
         nn.init.xavier_uniform_(self.conv_lower.weight)
         nn.init.xavier_uniform_(self.conv_upper.weight)
 
     def forward(self, img):
-        img = img.unsqueeze(0)
+        if self.augment_img:
+            img = img.unsqueeze(0)
         stats = adaptive_pool(img)
         lower = self.sigmoid(self.conv_lower(stats))  # (B, C, 1, 1)
         upper = self.sigmoid(self.conv_upper(stats))  # (B, C, 1, 1)
@@ -235,7 +237,7 @@ class VariationalColorShift(nn.Module):
         return transformed_img
 
 class DilatedVariationalColorShift(nn.Module):
-    def __init__(self, kernel_size=4, dilation=2, dropout=0.3):
+    def __init__(self, kernel_size=4, dilation=2, dropout=0.3, augment_img = False):
         super(DilatedVariationalColorShift, self).__init__()
         self.kernel_size = kernel_size
         self.dropout = nn.Dropout2d(dropout)
@@ -249,6 +251,8 @@ class DilatedVariationalColorShift(nn.Module):
 
         self.sigmoid = nn.Sigmoid()
         
+        self.augment_img = augment_img
+
         # Initialize weights
         nn.init.xavier_uniform_(self.conv_lower.weight)
         nn.init.xavier_uniform_(self.conv_upper.weight)
@@ -258,7 +262,8 @@ class DilatedVariationalColorShift(nn.Module):
         """
         img: (B, C, H, W) - Batch of images (batch size, 3 channels, height, width)
         """
-        img = img.unsqueeze(0)  # Add batch dim
+        if self.augment_img:
+            img = img.unsqueeze(0)  # Add batch dim
         # Extract deeper features using dilated convolution
         dilated_features = self.dilated_conv(img)  # (B, C, H, W)
         dilated_features = self.dropout(dilated_features)  # Apply dropout to prevent overfitting
