@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 from torch.autograd import Variable
-from layers import CNN, Encoder, HybirdDecoder
+from layers import CNN, Encoder, HybirdDecoder, VCS
 
 USE_CUDA = torch.cuda.is_available()
 
@@ -11,6 +11,7 @@ class CNNSeq2Seq(nn.Module):
         super(CNNSeq2Seq, self).__init__()
         self.max_len = max_len
 
+        self.vcs = VCS()
         self.backbone = CNN()
         self.encoder = Encoder(rnn_hidden_size=hidden_size)
         self.decoder = HybirdDecoder(vocab_size=vocab_size, hidden_size=hidden_size)
@@ -29,15 +30,17 @@ class CNNSeq2Seq(nn.Module):
                 if not m.bias is None:
                     nn.init.constant_(m.bias, 0.0)
 
-    def forward_train(self, x, y):        
-        out = self.backbone(x)
+    def forward_train(self, x, y):
+        out = self.vcs(x)
+        out = self.backbone(out)
         encoder_outputs = self.encoder(out)
 
         vocab_out = self.decoder.forward_train(encoder_outputs, self.max_len, y)
         vocab_out = self.prediction(vocab_out)
         return vocab_out
 
-    def forward_test(self, x):         
+    def forward_test(self, x):  
+        out = self.vcs(x)
         out = self.backbone(x)
         encoder_outputs = self.encoder(out)
 
@@ -61,6 +64,7 @@ class CNNSeq2Seq(nn.Module):
         
     def forward_together(self, x_label, x_nolabel, y):
         x_all = torch.cat([x_label, x_nolabel], dim=0)
+        out_all = self.vcs(x_all)
         out_all = self.backbone(x_all)
         
         out_label = out_all[:x_label.size(0)]
@@ -90,7 +94,8 @@ class CNNSeq2Seq(nn.Module):
             outputs.append(output.unsqueeze(1))
 
         return vocab_out, torch.cat(outputs, dim=1)
-    def forward(self, x):         
+    def forward(self, x):   
+        out = self.vcs(x)        
         out = self.backbone(x)
         encoder_outputs = self.encoder(out)
 

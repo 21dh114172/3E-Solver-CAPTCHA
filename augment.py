@@ -213,7 +213,7 @@ class RandAugmentMC(object):
             if random.random() < 0.5:
                 img = op(img, v=v, max_v=max_v, bias=bias)
         # img = CutoutAbs(img, int(32*0.5))
-        img = VCShift(img, None, None)
+        #img = VCShift(img, None, None)
         return img
 
 class AugmentData():

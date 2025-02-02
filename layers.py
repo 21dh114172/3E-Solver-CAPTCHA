@@ -188,13 +188,15 @@ def adaptive_pool(img_tensor):
     return torch.cat([max_pool, min_pool, avg_pool], dim=1)
 
 class VCS(nn.Module):
-    def __init__(self):
+    def __init__(self, augment_img = False):
         super(VCS, self).__init__()
         self.conv = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1)  # Predict color shift
         self.sigmoid = nn.Sigmoid()
+        self.augment_img = augment_img
     
     def forward(self, img):
-        img = img.unsqueeze(0)  # Add batch dim
+        if self.augment_img:
+            img = img.unsqueeze(0)  # Add batch dim
         stats = adaptive_pool(img)  # Extract statistics
         color_offset = self.conv(stats)  # Predict shift
         shift = self.sigmoid(color_offset)  # Normalize shifts
