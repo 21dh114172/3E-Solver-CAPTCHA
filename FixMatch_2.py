@@ -148,6 +148,7 @@ if USE_WANDB:
     run = wandb.init(project="3E_CapTrainer", config=wandb_config, name=args.wandb_run_name if args.wandb_run_name != "" else None )
     wandb.define_metric("train/*", step_metric="epoch")
     wandb.define_metric("test/*", step_metric="epoch")
+    artifact = wandb.Artifact(name="output_models", type="model")
 
 for epoch in range(NUM_EPOCHS):
     time_epoch = time.time()
@@ -276,6 +277,8 @@ for epoch in range(NUM_EPOCHS):
         save_best_model_ema(
                 test_class_loss_ema[-1], epoch, model_ema, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH, model_name="ema_best_model.pth"
         )
+        artifact.add_dir("./result")
+        run.log_artifact(artifact)
     
     if USE_WANDB:
         wandb.log(
@@ -325,6 +328,8 @@ for epoch in range(NUM_EPOCHS):
         np.save("result/" + path + "_train_accuracy.npy", np.array(train_accuracy))
         np.save("result/" + path + "_test_class_loss_ema.npy", np.array(test_class_loss_ema))
         np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
+        artifact.add_dir("./result")
+        run.log_artifact(artifact)
 
 fig = plt.figure(figsize=(20, 10))
 ax1 = fig.add_subplot(121)
@@ -356,3 +361,5 @@ np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
 
 save_model(args.epoch, model, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH)
 save_model(args.epoch, model_ema, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH, model_name="ema_final_model.pth")
+artifact.add_dir("./result")
+run.log_artifact(artifact)
