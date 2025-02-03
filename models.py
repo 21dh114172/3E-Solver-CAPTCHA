@@ -11,7 +11,7 @@ class CNNSeq2Seq(nn.Module):
         super(CNNSeq2Seq, self).__init__()
         self.max_len = max_len
 
-        self.vcs = VariationalColorShift()
+        self.vcs = VCS()
         self.backbone = CNN()
         self.encoder = Encoder(rnn_hidden_size=hidden_size)
         self.decoder = HybirdDecoder(vocab_size=vocab_size, hidden_size=hidden_size)
