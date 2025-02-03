@@ -328,6 +328,7 @@ for epoch in range(NUM_EPOCHS):
         np.save("result/" + path + "_test_class_loss_ema.npy", np.array(test_class_loss_ema))
         np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
         run.log_artifact(artifact)
+        run.save("./result/*")
 
 fig = plt.figure(figsize=(20, 10))
 ax1 = fig.add_subplot(121)
