@@ -9,6 +9,130 @@ import math
 USE_CUDA = torch.cuda.is_available()
 
 
+def generate_2d_position_maps(height, width, batch_size=1, device='cpu'):
+    pos_y = torch.linspace(-1.0, 1.0, steps=height, device=device)
+    pos_x = torch.linspace(-1.0, 1.0, steps=width, device=device)
+    grid_y, grid_x = torch.meshgrid(pos_y, pos_x) # HxW
+    pos_map_y = grid_y.unsqueeze(0).unsqueeze(0).repeat(batch_size, 1, 1, 1)
+    pos_map_x = grid_x.unsqueeze(0).unsqueeze(0).repeat(batch_size, 1, 1, 1)
+    return pos_map_y, pos_map_x
+
+
+class PosConv(nn.Module):
+    """
+    CNN with positional encoding support for 2D image processing.
+    
+    Uses a combination of residual blocks and positional convolutional layers
+    with pooling and dropout for feature extraction.
+    
+    Attributes:
+        conv1-5: Residual blocks for feature extraction
+        conv6-9: Positional convolutional layers
+        pool1-5: Max pooling layers
+        dropout_1-9: Dropout layers (p=0.1)
+        pos_map_y_orig, pos_map_x_orig: Cached positional maps
+        
+    Methods:
+        forward(x): Processes input through the network with positional encoding
+    """
+    def __init__(self):
+        super().__init__()
+
+        self.conv1 = ResBlk(3, 32)
+        self.pool1 = nn.MaxPool2d(kernel_size=2)
+        self.dropout_1 = nn.Dropout(0.1)
+        
+        self.conv8 = PosConv2DLayer(32, 32, kernel_size=3, padding=1)
+        self.dropout_8 = nn.Dropout(0.1)
+        
+        self.conv2 = ResBlk(32, 64)
+        self.pool2 = nn.MaxPool2d(kernel_size=2)
+        self.dropout_2 = nn.Dropout(0.1)
+        
+        self.conv7 = PosConv2DLayer(64, 64, kernel_size=3, padding=1)
+        self.dropout_7 = nn.Dropout(0.1)
+        
+        self.conv3 = ResBlk(64, 128)
+        self.pool3 = nn.MaxPool2d(kernel_size=(2, 1))
+        self.dropout_3 = nn.Dropout(0.1)
+        
+        self.conv6 = PosConv2DLayer(128, 128, kernel_size=3, padding=1)
+        self.dropout_6 = nn.Dropout(0.1)
+        
+        self.conv4 = ResBlk(128, 256)
+        self.pool4 = nn.MaxPool2d(kernel_size=(2, 1))
+        self.dropout_4 = nn.Dropout(0.1)
+        
+        self.conv9 = PosConv2DLayer(256, 256, kernel_size=3, padding=1)
+        self.dropout_9 = nn.Dropout(0.1)
+        
+        self.conv5 = ResBlk(256, 256)
+        self.pool5 = nn.MaxPool2d(kernel_size=(4, 1))
+        self.dropout_5 = nn.Dropout(0.1)
+
+        
+        self.pos_map_y_orig = None
+        self.pos_map_x_orig = None
+
+
+    def forward(self, x):
+        batch_size, _, H, W = x.shape
+
+        # Generate or retrieve position maps for this batch/input size
+        # (Generating on the fly handles varying batch sizes)
+        if self.pos_map_y_orig is None or self.pos_map_y_orig.shape[2:] != (H, W):
+             self.pos_map_y_orig, self.pos_map_x_orig = generate_2d_position_maps(H, W, batch_size=1, device=x.device)
+             # print(f"Generated pos maps for size: {H}x{W}") # Debug
+
+        # Repeat maps for current batch size
+        # Do this inside if needed, or pass batch_size to generate_2d_position_maps
+        pos_y = self.pos_map_y_orig.repeat(batch_size, 1, 1, 1)
+        pos_x = self.pos_map_x_orig.repeat(batch_size, 1, 1, 1)
+
+
+        # CNN Backbone
+        
+        out = x
+        
+        out = self.conv1(out)
+        out = self.pool1(out)
+        out = self.dropout_1(out)
+        
+        out = self.conv8(out, pos_y, pos_x)
+        out = self.dropout_8(out)
+        
+        out = self.conv2(out)
+        out = self.pool2(out)
+        out = self.dropout_2(out)
+        
+        out = self.conv7(out, pos_y, pos_x)
+        out = self.dropout_7(out)
+        
+        out = self.conv3(out)
+        out = self.pool3(out)
+        out = self.dropout_3(out)
+        
+        out = self.conv6(out, pos_y, pos_x)
+        out = self.dropout_6(out)
+        
+        out = self.conv4(out)
+        out = self.pool4(out)
+        out = self.dropout_4(out)
+        
+        out = self.conv9(out, pos_y, pos_x)
+        out = self.dropout_9(out)
+        
+        out = self.conv5(out)
+        out = self.pool5(out)
+        out = self.dropout_5(out)
+        
+        
+        
+        out = out.squeeze(2)
+        out = out.transpose(1, 2)
+
+        return out
+
 class CNN(nn.Module):
     """
     input: [batch_size, 3, 64, 128]
@@ -165,6 +289,50 @@ class ResBlk(nn.Module):
 
         return out
 
+
+class PosConv2DLayer(nn.Module):
+    """
+    2D convolution with positional encoding.
+    
+    Enhances standard convolution by adding learnable position-dependent offsets.
+    
+    Attributes:
+        conv: Standard convolution layer
+        Wpos_y, Wpos_x: Learnable weights for positional maps
+        bpos: Positional bias
+        bn: Batch normalization
+        relu: ReLU activation
+    
+    Methods:
+        forward(x, pos_map_y, pos_map_x, return_intermediates=False):
+            Process input with positional encoding.
+            Returns full tensor or intermediates if requested.
+    """
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0):
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False)
+        self.Wpos_y = nn.Parameter(torch.randn(1, out_channels, 1, 1))
+        self.Wpos_x = nn.Parameter(torch.randn(1, out_channels, 1, 1))
+        self.bpos = nn.Parameter(torch.zeros(1, out_channels, 1, 1))
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU()
+        self.out_channels = out_channels # Store out_channels
+
+    def forward(self, x, pos_map_y, pos_map_x, return_intermediates=False): # Added flag
+        S_org = self.conv(x)
+        output_height, output_width = S_org.shape[2], S_org.shape[3]
+        current_pos_map_y = F.interpolate(pos_map_y, size=(output_height, output_width), mode='bilinear', align_corners=False)
+        current_pos_map_x = F.interpolate(pos_map_x, size=(output_height, output_width), mode='bilinear', align_corners=False)
+        positional_offset = (self.Wpos_y * current_pos_map_y +
+                             self.Wpos_x * current_pos_map_x +
+                             self.bpos)
+        S_exp = S_org + positional_offset
+        out = self.relu(self.bn(S_exp)) # Apply BN before ReLU
+
+        if return_intermediates:
+            return S_org, positional_offset, S_exp, out
+        else:
+            return out
 
 class DotProductAttentionLayer(nn.Module):
     def __init__(self):
