@@ -47,7 +47,8 @@ parser.add_argument('--use-new-vocab', action="store_true", help='create new lab
 parser.add_argument('--vocab', default='', type=str, help='Provide vocab for current training session, might cause mismatch output layer (Default: False)')
 parser.add_argument('--wandb-api-key', default='', type=str, help='Provide wandb api key for log tracking')
 parser.add_argument('--wandb-run-name', default='', type=str, help='Provide wandb run name')
-
+parser.add_argument('--use-posconv', action="store_true", help='use posconv')
+parser.add_argument('--use-color-shift', action="store_true", help='use color shift')
 
 args = parser.parse_args()
 args.vocab = os.environ.get("my_vocab", args.vocab)
@@ -87,8 +88,8 @@ token = "".join(list(id2token.values()))
 print(f"token:{token}")
 print(f"vocab:{vocab}")
 
-model = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size)
-model_ema = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size)
+model = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size, use_posconv=args.use_posconv, use_color_shift=args.use_color_shift)
+model_ema = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size, use_posconv=args.use_posconv, use_color_shift=args.use_color_shift)
 
 class_criterion = Seq2SeqLoss()
 consistent_criterion = ConsistentLoss(args.threshold)

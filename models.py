@@ -7,12 +7,14 @@ USE_CUDA = torch.cuda.is_available()
 
 
 class CNNSeq2Seq(nn.Module):
-    def __init__(self, vocab_size, max_len, hidden_size=128):
+    def __init__(self, vocab_size, max_len, hidden_size=128, use_posconv=False, use_color_shift=False):
+        
         super(CNNSeq2Seq, self).__init__()
         self.max_len = max_len
-
-        self.vcs = VariationalColorShift()
-        self.backbone = PosConv()
+        self.use_color_shift = use_color_shift
+        if use_color_shift:
+            self.vcs = VariationalColorShift()
+        self.backbone = PosConv() if use_posconv else CNN()
         self.encoder = Encoder(rnn_hidden_size=hidden_size)
         self.decoder = HybirdDecoder(vocab_size=vocab_size, hidden_size=hidden_size)
         self.prediction = nn.Linear(hidden_size, vocab_size)
@@ -31,7 +33,9 @@ class CNNSeq2Seq(nn.Module):
                     nn.init.constant_(m.bias, 0.0)
 
     def forward_train(self, x, y):
-        out = self.vcs(x)
+        out = x
+        if self.use_color_shift:
+            out = self.vcs(out)
         out = self.backbone(out)
         encoder_outputs = self.encoder(out)
 
@@ -40,7 +44,9 @@ class CNNSeq2Seq(nn.Module):
         return vocab_out
 
     def forward_test(self, x):  
-        out = self.vcs(x)
+        out = x
+        if self.use_color_shift:
+            out = self.vcs(out)
         out = self.backbone(x)
         encoder_outputs = self.encoder(out)
 
@@ -64,7 +70,9 @@ class CNNSeq2Seq(nn.Module):
         
     def forward_together(self, x_label, x_nolabel, y):
         x_all = torch.cat([x_label, x_nolabel], dim=0)
-        out_all = self.vcs(x_all)
+        out_all = x_all
+        if self.use_color_shift:
+            out_all = self.vcs(x_all)
         out_all = self.backbone(x_all)
         
         out_label = out_all[:x_label.size(0)]
@@ -94,8 +102,10 @@ class CNNSeq2Seq(nn.Module):
             outputs.append(output.unsqueeze(1))
 
         return vocab_out, torch.cat(outputs, dim=1)
-    def forward(self, x):   
-        out = self.vcs(x)        
+    def forward(self, x):
+        out = x
+        if self.use_color_shift:
+            out = self.vcs(out)      
         out = self.backbone(x)
         encoder_outputs = self.encoder(out)
 
