@@ -64,13 +64,13 @@ torch.backends.cudnn.benchmark = True
 pprint.pprint(args)
 USE_CUDA = torch.cuda.is_available()
 
-USE_WANDB = True
+USE_WANDB = False
 if args.wandb_api_key != None and args.wandb_api_key != "":
     try:
         wandb.login(key=args.wandb_api_key)
+        USE_WANDB = True
     except Exception as e:
         print("Can not login with wandb api key, continue without wandb...", e)
-        USE_WANDB = False
 
 LR = args.lr
 NUM_EPOCHS = args.epoch
@@ -328,8 +328,9 @@ for epoch in range(NUM_EPOCHS):
         np.save("result/" + path + "_train_accuracy.npy", np.array(train_accuracy))
         np.save("result/" + path + "_test_class_loss_ema.npy", np.array(test_class_loss_ema))
         np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
-        run.log_artifact(artifact)
-        run.save("./result/*")
+        if USE_WANDB:
+            run.log_artifact(artifact)
+            run.save("./result/*")
 
 fig = plt.figure(figsize=(20, 10))
 ax1 = fig.add_subplot(121)
@@ -361,5 +362,5 @@ np.save("result/" + path + "_train_loss_class.npy", np.array(train_loss_class))
 
 save_model(args.epoch, model, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH)
 save_model(args.epoch, model_ema, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH, model_name="ema_final_model.pth")
-
-run.log_artifact(artifact)
+if USE_WANDB:
+    run.log_artifact(artifact)
