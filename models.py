@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 from torch.autograd import Variable
-from layers import CNN, Encoder, HybirdDecoder, VCS, VariationalColorShift, DilatedVariationalColorShift, PosConv
+from layers import CNN, Encoder, HybirdDecoder, GlobalUniformColorShift, GlobalVariationalColorShift, SpatialVariationalColorShift, PosConv
 
 USE_CUDA = torch.cuda.is_available()
 
@@ -13,7 +13,7 @@ class CNNSeq2Seq(nn.Module):
         self.max_len = max_len
         self.use_color_shift = use_color_shift
         if use_color_shift:
-            self.vcs = VariationalColorShift()
+            self.vcs = GlobalVariationalColorShift()
         self.backbone = PosConv() if use_posconv else CNN()
         self.encoder = Encoder(rnn_hidden_size=hidden_size)
         self.decoder = HybirdDecoder(vocab_size=vocab_size, hidden_size=hidden_size)

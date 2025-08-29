@@ -7,11 +7,11 @@ import PIL.ImageOps
 import PIL.ImageEnhance
 import PIL.ImageDraw
 from PIL import Image
-from layers import VCS, DilatedVariationalColorShift, VariationalColorShift
+from layers import GlobalUniformColorShift, GlobalVariationalColorShift, SpatialVariationalColorShift
 import torch
-vcs = VCS()
-dilatedVCS = DilatedVariationalColorShift()
-different_VCS = VariationalColorShift()
+vcs = GlobalVariationalColorShift()
+dilatedVCS = GlobalVariationalColorShift()
+different_VCS = GlobalUniformColorShift()
 
 PARAMETER_MAX = 10
 

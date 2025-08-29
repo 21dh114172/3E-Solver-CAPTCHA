@@ -355,9 +355,9 @@ def adaptive_pool(img_tensor):
     avg_pool = torch.nn.functional.adaptive_avg_pool2d(img_tensor, (1, 1))
     return torch.cat([max_pool, min_pool, avg_pool], dim=1)
 
-class VCS(nn.Module):
+class GlobalUniformColorShift(nn.Module):
     def __init__(self, augment_img = False):
-        super(VCS, self).__init__()
+        super(GlobalUniformColorShift, self).__init__()
         self.conv = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1)  # Predict color shift
         self.sigmoid = nn.Sigmoid()
         self.augment_img = augment_img
@@ -377,9 +377,9 @@ class VCS(nn.Module):
         
         return img * w_scaled
 
-class VariationalColorShift(nn.Module):
+class GlobalVariationalColorShift(nn.Module):
     def __init__(self, augment_img = False):
-        super(VariationalColorShift, self).__init__()
+        super(GlobalVariationalColorShift, self).__init__()
         self.conv_lower = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1, bias=False)
         self.conv_upper = nn.Conv2d(3 * 3, 3, kernel_size=3, padding=1, bias=False)
         self.sigmoid = nn.Sigmoid()
@@ -404,9 +404,9 @@ class VariationalColorShift(nn.Module):
 
         return transformed_img
 
-class DilatedVariationalColorShift(nn.Module):
+class SpatialVariationalColorShift(nn.Module):
     def __init__(self, kernel_size=4, dilation=2, dropout=0.3, augment_img = False):
-        super(DilatedVariationalColorShift, self).__init__()
+        super(SpatialVariationalColorShift, self).__init__()
         self.kernel_size = kernel_size
         self.dropout = nn.Dropout2d(dropout)
 
