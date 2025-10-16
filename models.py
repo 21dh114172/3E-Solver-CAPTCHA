@@ -7,14 +7,14 @@ USE_CUDA = torch.cuda.is_available()
 
 
 class CNNSeq2Seq(nn.Module):
-    def __init__(self, vocab_size, max_len, hidden_size=128, use_posconv=False, use_color_shift=False):
+    def __init__(self, vocab_size, max_len, hidden_size=128, use_posconv=False, use_color_shift=False, posconv_size=''):
         
         super(CNNSeq2Seq, self).__init__()
         self.max_len = max_len
         self.use_color_shift = use_color_shift
         if use_color_shift:
             self.vcs = GlobalVariationalColorShift()
-        self.backbone = PosConv() if use_posconv else CNN()
+        self.backbone = PosConv(posconv_size) if use_posconv else CNN()
         self.encoder = Encoder(rnn_hidden_size=hidden_size)
         self.decoder = HybirdDecoder(vocab_size=vocab_size, hidden_size=hidden_size)
         self.prediction = nn.Linear(hidden_size, vocab_size)

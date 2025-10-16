@@ -35,13 +35,15 @@ class PosConv(nn.Module):
     Methods:
         forward(x): Processes input through the network with positional encoding
     """
-    def __init__(self):
+    def __init__(self, pos_size='large'):
         super().__init__()
-
+        self.pos_size = pos_size  # 'small' | 'medium' | 'large'
+        
         self.conv1 = ResBlk(3, 32)
         self.pool1 = nn.MaxPool2d(kernel_size=2)
         self.dropout_1 = nn.Dropout(0.1)
         
+        # Pos‐conv before conv2 (only large)
         self.conv8 = PosConv2DLayer(32, 32, kernel_size=3, padding=1)
         self.dropout_8 = nn.Dropout(0.1)
         
@@ -49,6 +51,7 @@ class PosConv(nn.Module):
         self.pool2 = nn.MaxPool2d(kernel_size=2)
         self.dropout_2 = nn.Dropout(0.1)
         
+        # Pos‐conv before conv3 (only large)
         self.conv7 = PosConv2DLayer(64, 64, kernel_size=3, padding=1)
         self.dropout_7 = nn.Dropout(0.1)
         
@@ -56,6 +59,7 @@ class PosConv(nn.Module):
         self.pool3 = nn.MaxPool2d(kernel_size=(2, 1))
         self.dropout_3 = nn.Dropout(0.1)
         
+        # Pos‐conv before conv4 (medium+large)
         self.conv6 = PosConv2DLayer(128, 128, kernel_size=3, padding=1)
         self.dropout_6 = nn.Dropout(0.1)
         
@@ -63,6 +67,7 @@ class PosConv(nn.Module):
         self.pool4 = nn.MaxPool2d(kernel_size=(2, 1))
         self.dropout_4 = nn.Dropout(0.1)
         
+        # Pos‐conv before conv5 (always)
         self.conv9 = PosConv2DLayer(256, 256, kernel_size=3, padding=1)
         self.dropout_9 = nn.Dropout(0.1)
         
@@ -98,27 +103,34 @@ class PosConv(nn.Module):
         out = self.pool1(out)
         out = self.dropout_1(out)
         
-        out = self.conv8(out, pos_y, pos_x)
-        out = self.dropout_8(out)
+        # large → apply conv8
+        if self.pos_size == 'large':
+            out = self.conv8(out, pos_y, pos_x)
+            out = self.dropout_8(out)
         
         out = self.conv2(out)
         out = self.pool2(out)
         out = self.dropout_2(out)
         
-        out = self.conv7(out, pos_y, pos_x)
-        out = self.dropout_7(out)
+        # large → apply conv7
+        if self.pos_size == 'large':
+            out = self.conv7(out, pos_y, pos_x)
+            out = self.dropout_7(out)
         
         out = self.conv3(out)
         out = self.pool3(out)
         out = self.dropout_3(out)
         
-        out = self.conv6(out, pos_y, pos_x)
-        out = self.dropout_6(out)
+        # medium or large → apply conv6
+        if self.pos_size in ('medium','large'):
+            out = self.conv6(out, pos_y, pos_x)
+            out = self.dropout_6(out)
         
         out = self.conv4(out)
         out = self.pool4(out)
         out = self.dropout_4(out)
         
+        # always apply conv9 before conv5
         out = self.conv9(out, pos_y, pos_x)
         out = self.dropout_9(out)
         
