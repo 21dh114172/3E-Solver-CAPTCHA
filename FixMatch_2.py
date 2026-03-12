@@ -275,10 +275,10 @@ for epoch in range(NUM_EPOCHS):
     print(f"epoch time {time.time()-time_epoch}\n")
     if (epoch + 1) >= args.wait_save_best_epoch:
         save_best_model(
-                test_class_loss[-1], epoch, model, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH 
+                test_class_loss[-1], epoch, model, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH , posconv_size=args.posconv_size
         )
         save_best_model_ema(
-                test_class_loss_ema[-1], epoch, model_ema, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH, model_name="ema_best_model.pth"
+                test_class_loss_ema[-1], epoch, model_ema, optimizer, class_criterion, vocab=vocab, id2token=id2token, image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH, posconv_size=args.posconv_size, model_name="ema_best_model.pth"
         )
     
     if USE_WANDB:

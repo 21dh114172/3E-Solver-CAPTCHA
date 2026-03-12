@@ -15,7 +15,7 @@ def get_random_samples(dataloader, amount=5):
         samples.append(dataset[index])
     return samples
 
-def save_model(epochs, model, optimizer, criterion, vocab, id2token, image_height, image_width, model_name="final_model.pth"):
+def save_model(epochs, model, optimizer, criterion, vocab, id2token, image_height, image_width, posconv_size = '', model_name="final_model.pth"):
     """
     Function to save the trained model to disk.
     """
@@ -29,6 +29,7 @@ def save_model(epochs, model, optimizer, criterion, vocab, id2token, image_heigh
                 'id2token': id2token,
                 'image_height': image_height,
                 'image_width': image_width,
+                'posconv_size': posconv_size,
                 }, f'result/{model_name}')
     torch.save(model, f'result/embed_{model_name}')
 
@@ -45,7 +46,7 @@ class SaveBestModel:
         
     def __call__(
         self, current_valid_loss, 
-        epoch, model, optimizer, criterion, vocab, id2token, image_height, image_width, model_name="best_model.pth"
+        epoch, model, optimizer, criterion, vocab, id2token, image_height, image_width, posconv_size = '', model_name="best_model.pth"
     ):
         if current_valid_loss < self.best_valid_loss:
             self.best_valid_loss = current_valid_loss
@@ -60,6 +61,7 @@ class SaveBestModel:
                 'id2token': id2token,
                 'image_height': image_height,
                 'image_width': image_width,
+                'posconv_size': posconv_size,
                 }, f'result/{model_name}')
             torch.save(model, f'result/embed_{model_name}')
             
