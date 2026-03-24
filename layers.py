@@ -80,7 +80,7 @@ class PosConv(nn.Module):
         self.pos_map_x_orig = None
 
 
-    def forward(self, x):
+    def forward(self, x, return_intermediates=False):
         batch_size, _, H, W = x.shape
 
         # Generate or retrieve position maps for this batch/input size
