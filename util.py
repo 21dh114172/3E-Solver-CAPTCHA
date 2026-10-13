@@ -22,6 +22,9 @@ def save_model(epochs, model, optimizer, criterion, vocab, id2token, image_heigh
     print(f"Saving final model...")
     torch.save({
                 'epoch': epochs,
+                'head': getattr(model, 'head', 'seq2seq'),
+                'position_embedding_dim': getattr(model, 'position_embedding_dim', 16),
+                'hidden_size': getattr(model, 'hidden_size', 128),
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': criterion,
@@ -29,6 +32,8 @@ def save_model(epochs, model, optimizer, criterion, vocab, id2token, image_heigh
                 'id2token': id2token,
                 'image_height': image_height,
                 'image_width': image_width,
+                'posconv_implementation': getattr(model.backbone, 'posconv_implementation', 'full'),
+                'coordinate_method': getattr(model.backbone, 'coordinate_method', 'interpolate'),
                 'posconv_size': posconv_size,
                 }, f'result/{model_name}')
     torch.save(model, f'result/embed_{model_name}')
@@ -54,6 +59,9 @@ class SaveBestModel:
             print(f"\nSaving best model for epoch: {epoch+1}\n")
             torch.save({
                 'epoch': epoch+1,
+                'head': getattr(model, 'head', 'seq2seq'),
+                'position_embedding_dim': getattr(model, 'position_embedding_dim', 16),
+                'hidden_size': getattr(model, 'hidden_size', 128),
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': criterion,
@@ -61,6 +69,8 @@ class SaveBestModel:
                 'id2token': id2token,
                 'image_height': image_height,
                 'image_width': image_width,
+                'posconv_implementation': getattr(model.backbone, 'posconv_implementation', 'full'),
+                'coordinate_method': getattr(model.backbone, 'coordinate_method', 'interpolate'),
                 'posconv_size': posconv_size,
                 }, f'result/{model_name}')
             torch.save(model, f'result/embed_{model_name}')

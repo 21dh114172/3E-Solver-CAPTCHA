@@ -35,8 +35,13 @@ class PosConv(nn.Module):
     Methods:
         forward(x): Processes input through the network with positional encoding
     """
-    def __init__(self, pos_size='large'):
+    def __init__(self, pos_size='large', coordinate_method='interpolate', posconv_implementation='full'):
         super().__init__()
+        if posconv_implementation not in ('full', 'sequential'):
+            raise ValueError(f'Unknown PosConv implementation: {posconv_implementation}')
+        self.posconv_implementation = posconv_implementation
+        positional_layer = PosConv2DLayer if posconv_implementation == 'full' else SequentialPosConv2DLayer
+        self.coordinate_method = coordinate_method
         self.pos_size = pos_size  # 'small' | 'medium' | 'large'
         
         self.conv1 = ResBlk(3, 32)
@@ -44,7 +49,7 @@ class PosConv(nn.Module):
         self.dropout_1 = nn.Dropout(0.1)
         
         # Pos‐conv before conv2 (only large)
-        self.conv8 = PosConv2DLayer(32, 32, kernel_size=3, padding=1)
+        self.conv8 = positional_layer(32, 32, kernel_size=3, padding=1, coordinate_method=coordinate_method)
         self.dropout_8 = nn.Dropout(0.1)
         
         self.conv2 = ResBlk(32, 64)
@@ -52,7 +57,7 @@ class PosConv(nn.Module):
         self.dropout_2 = nn.Dropout(0.1)
         
         # Pos‐conv before conv3 (only large)
-        self.conv7 = PosConv2DLayer(64, 64, kernel_size=3, padding=1)
+        self.conv7 = positional_layer(64, 64, kernel_size=3, padding=1, coordinate_method=coordinate_method)
         self.dropout_7 = nn.Dropout(0.1)
         
         self.conv3 = ResBlk(64, 128)
@@ -60,7 +65,7 @@ class PosConv(nn.Module):
         self.dropout_3 = nn.Dropout(0.1)
         
         # Pos‐conv before conv4 (medium+large)
-        self.conv6 = PosConv2DLayer(128, 128, kernel_size=3, padding=1)
+        self.conv6 = positional_layer(128, 128, kernel_size=3, padding=1, coordinate_method=coordinate_method)
         self.dropout_6 = nn.Dropout(0.1)
         
         self.conv4 = ResBlk(128, 256)
@@ -68,7 +73,7 @@ class PosConv(nn.Module):
         self.dropout_4 = nn.Dropout(0.1)
         
         # Pos‐conv before conv5 (always)
-        self.conv9 = PosConv2DLayer(256, 256, kernel_size=3, padding=1)
+        self.conv9 = positional_layer(256, 256, kernel_size=3, padding=1, coordinate_method=coordinate_method)
         self.dropout_9 = nn.Dropout(0.1)
         
         self.conv5 = ResBlk(256, 256)
@@ -83,17 +88,15 @@ class PosConv(nn.Module):
     def forward(self, x, return_intermediates=False):
         batch_size, _, H, W = x.shape
 
-        # Generate or retrieve position maps for this batch/input size
-        # (Generating on the fly handles varying batch sizes)
-        if self.pos_map_y_orig is None or self.pos_map_y_orig.shape[2:] != (H, W):
-             self.pos_map_y_orig, self.pos_map_x_orig = generate_2d_position_maps(H, W, batch_size=1, device=x.device)
-             # print(f"Generated pos maps for size: {H}x{W}") # Debug
-
-        # Repeat maps for current batch size
-        # Do this inside if needed, or pass batch_size to generate_2d_position_maps
-        pos_y = self.pos_map_y_orig.repeat(batch_size, 1, 1, 1)
-        pos_x = self.pos_map_x_orig.repeat(batch_size, 1, 1, 1)
-
+        pos_y = pos_x = None
+        if self.coordinate_method == 'interpolate':
+            if (self.pos_map_y_orig is None
+                    or self.pos_map_y_orig.shape[2:] != (H, W)
+                    or self.pos_map_y_orig.device != x.device):
+                self.pos_map_y_orig, self.pos_map_x_orig = generate_2d_position_maps(
+                    H, W, batch_size=1, device=x.device)
+            pos_y = self.pos_map_y_orig.repeat(batch_size, 1, 1, 1)
+            pos_x = self.pos_map_x_orig.repeat(batch_size, 1, 1, 1)
 
         # CNN Backbone
         
@@ -320,8 +323,11 @@ class PosConv2DLayer(nn.Module):
             Process input with positional encoding.
             Returns full tensor or intermediates if requested.
     """
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, coordinate_method='interpolate'):
         super().__init__()
+        if coordinate_method not in ('interpolate', 'regenerate'):
+            raise ValueError(f'Unknown coordinate method: {coordinate_method}')
+        self.coordinate_method = coordinate_method
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False)
         self.Wpos_y = nn.Parameter(torch.randn(1, out_channels, 1, 1))
         self.Wpos_x = nn.Parameter(torch.randn(1, out_channels, 1, 1))
@@ -333,8 +339,16 @@ class PosConv2DLayer(nn.Module):
     def forward(self, x, pos_map_y, pos_map_x, return_intermediates=False): # Added flag
         S_org = self.conv(x)
         output_height, output_width = S_org.shape[2], S_org.shape[3]
-        current_pos_map_y = F.interpolate(pos_map_y, size=(output_height, output_width), mode='bilinear', align_corners=False)
-        current_pos_map_x = F.interpolate(pos_map_x, size=(output_height, output_width), mode='bilinear', align_corners=False)
+        if self.coordinate_method == 'interpolate':
+            current_pos_map_y = F.interpolate(pos_map_y, size=(output_height, output_width), mode='bilinear', align_corners=False)
+            current_pos_map_x = F.interpolate(pos_map_x, size=(output_height, output_width), mode='bilinear', align_corners=False)
+        else:
+            # Generate coordinates directly at the current feature resolution.
+            kernel_y, kernel_x = self.conv.kernel_size
+            current_pos_map_y = ((torch.arange(output_height, device=S_org.device, dtype=S_org.dtype)
+                                  - kernel_y // 2) / output_height).view(1, 1, -1, 1)
+            current_pos_map_x = ((torch.arange(output_width, device=S_org.device, dtype=S_org.dtype)
+                                  - kernel_x // 2) / output_width).view(1, 1, 1, -1)
         positional_offset = (self.Wpos_y * current_pos_map_y +
                              self.Wpos_x * current_pos_map_x +
                              self.bpos)
@@ -345,6 +359,58 @@ class PosConv2DLayer(nn.Module):
             return S_org, positional_offset, S_exp, out
         else:
             return out
+
+class SequentialPosConv2DLayer(nn.Module):
+    """Horizontal position injection followed by vertical convolution and injection.
+
+    Zero padding is applied separately on each axis. The vertical convolution
+    processes the horizontal positional term, including its boundary effects.
+    Pooling remains in the backbone, as for PosConv2DLayer.
+    """
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0,
+                 coordinate_method='interpolate'):
+        super().__init__()
+        if coordinate_method not in ('interpolate', 'regenerate'):
+            raise ValueError(f'Unknown coordinate method: {coordinate_method}')
+        self.coordinate_method = coordinate_method
+        ky, kx = nn.modules.utils._pair(kernel_size)
+        sy, sx = nn.modules.utils._pair(stride)
+        py, px = nn.modules.utils._pair(padding)
+        self.horizontal = nn.Conv2d(in_channels, out_channels, (1, kx),
+                                    stride=(1, sx), padding=(0, px), bias=False)
+        self.vertical = nn.Conv2d(out_channels, out_channels, (ky, 1),
+                                  stride=(sy, 1), padding=(py, 0), bias=False)
+        self.Wpos_x = nn.Parameter(torch.zeros(1, out_channels, 1, 1))
+        self.Wpos_y = nn.Parameter(torch.zeros(1, out_channels, 1, 1))
+        self.bpos_x = nn.Parameter(torch.zeros(1, out_channels, 1, 1))
+        self.bpos_y = nn.Parameter(torch.zeros(1, out_channels, 1, 1))
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU()
+
+    def _coordinate(self, features, original_map, axis, kernel):
+        if self.coordinate_method == 'interpolate':
+            return F.interpolate(original_map, size=features.shape[2:],
+                                 mode='bilinear', align_corners=False)
+        size = features.shape[axis]
+        coord = (torch.arange(size, device=features.device, dtype=features.dtype)
+                 - kernel // 2) / size
+        return coord.view(1, 1, -1, 1) if axis == 2 else coord.view(1, 1, 1, -1)
+
+    def forward(self, x, pos_map_y=None, pos_map_x=None, return_intermediates=False):
+        horizontal_features = self.horizontal(x)
+        coord_x = self._coordinate(horizontal_features, pos_map_x, 3,
+                                   self.horizontal.kernel_size[1])
+        horizontal = horizontal_features + self.Wpos_x * coord_x + self.bpos_x
+        vertical = self.vertical(horizontal)
+        coord_y = self._coordinate(vertical, pos_map_y, 2, self.vertical.kernel_size[0])
+        expanded = vertical + self.Wpos_y * coord_y + self.bpos_y
+        out = self.relu(self.bn(expanded))
+        if return_intermediates:
+            original = self.vertical(horizontal_features)
+            return original, expanded - original, expanded, out
+        return out
+
 
 class DotProductAttentionLayer(nn.Module):
     def __init__(self):

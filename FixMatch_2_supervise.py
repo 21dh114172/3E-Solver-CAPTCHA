@@ -35,6 +35,10 @@ parser.add_argument('--save-epoch', default=50, type=int, help='save model per e
 parser.add_argument('--wait-save-best-epoch', default=30, type=int, help='wait until epoch to save best model')
 parser.add_argument('--delimiter-label', default=' ', type=str, help='delimiter in label file')
 parser.add_argument('--hidden-size', default=128, type=int, help='hidden size for prediction layer')
+parser.add_argument('--head', choices=('seq2seq', 'C', 'D'), default='seq2seq',
+                    help='Readout: existing seq2seq, shared MLP with position embeddings (C), or hidden biases (D)')
+parser.add_argument('--position-embedding-dim', default=16, type=int,
+                    help='Learned position embedding width for Head C')
 parser.add_argument('--TARGET-HEIGHT', default=64, type=int, help='resize image height to target height')
 parser.add_argument('--TARGET-WIDTH', default=128, type=int, help='resize image width to target width')
 parser.add_argument('--use-abi-group', default=True, type=bool, help='use ABI Group strategy')
@@ -47,6 +51,10 @@ parser.add_argument('--wandb-api-key', default='', type=str, help='Provide wandb
 parser.add_argument('--wandb-run-name', default='', type=str, help='Provide wandb run name')
 parser.add_argument('--use-posconv', action="store_true", help='use posconv')
 parser.add_argument('--posconv-size', default='', type=str, help='posconv size')
+parser.add_argument('--posconv-implementation', choices=('full', 'sequential'), default='full',
+                    help='PosConv operation: full 2D convolution or horizontal then vertical positional convolutions')
+parser.add_argument('--coordinate-method', choices=('interpolate', 'regenerate'), default='interpolate',
+                    help='PosConv coordinates: resize original-image maps or regenerate at each feature resolution')
 parser.add_argument('--use-color-shift', action="store_true", help='use color shift')
 
 args = parser.parse_args()
@@ -79,8 +87,14 @@ token = "".join(list(id2token.values()))
 print(f"token:{token}")
 print(f"vocab:{vocab}")
 
-model = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size, use_posconv=args.use_posconv, use_color_shift=args.use_color_shift, posconv_size=args.posconv_size)
-model_ema = CNNSeq2Seq(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size, use_posconv=args.use_posconv, use_color_shift=args.use_color_shift, posconv_size=args.posconv_size)
+model_kwargs = dict(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.hidden_size,
+                    use_posconv=args.use_posconv, use_color_shift=args.use_color_shift,
+                    posconv_size=args.posconv_size, coordinate_method=args.coordinate_method,
+                    posconv_implementation=args.posconv_implementation, head=args.head,
+                    position_embedding_dim=args.position_embedding_dim,
+                    image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH)
+model = CNNSeq2Seq(**model_kwargs)
+model_ema = CNNSeq2Seq(**model_kwargs)
 
 class_criterion = Seq2SeqLoss()
 consistent_criterion = ConsistentLoss(args.threshold)
