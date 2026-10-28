@@ -97,7 +97,7 @@ class CNNSeq2Seq(nn.Module):
         out = x
         if self.use_color_shift:
             out = self.vcs(out)
-        out = self.backbone(x)
+        out = self.backbone(out)
         encoder_outputs = self.encoder(out)
 
         outputs = []
@@ -125,8 +125,8 @@ class CNNSeq2Seq(nn.Module):
         x_all = torch.cat([x_label, x_nolabel], dim=0)
         out_all = x_all
         if self.use_color_shift:
-            out_all = self.vcs(x_all)
-        out_all = self.backbone(x_all)
+            out_all = self.vcs(out_all)
+        out_all = self.backbone(out_all)
         
         out_label = out_all[:x_label.size(0)]
         out_nolabel = out_all[x_label.size(0):]
@@ -161,7 +161,7 @@ class CNNSeq2Seq(nn.Module):
         out = x
         if self.use_color_shift:
             out = self.vcs(out)      
-        out = self.backbone(x)
+        out = self.backbone(out)
         encoder_outputs = self.encoder(out)
 
         outputs = []
