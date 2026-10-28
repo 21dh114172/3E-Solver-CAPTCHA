@@ -56,7 +56,11 @@ parser.add_argument('--posconv-size', default='', type=str, help='posconv size')
 parser.add_argument('--posconv-implementation', choices=('full', 'sequential'), default='full',
                     help='PosConv operation: full 2D convolution or horizontal then vertical positional convolutions')
 parser.add_argument('--coordinate-method', choices=('interpolate', 'regenerate'), default='interpolate',
-                    help='PosConv coordinates: resize original-image maps or regenerate at each feature resolution')
+                    help='Legacy PosConv coordinates: resize original-image maps or regenerate at each feature resolution')
+parser.add_argument('--positional-mode', choices=('legacy', 'linear', 'corrected', 'explicit'), default='corrected',
+                    help='PosConv positional computation (default: corrected boundary coordinates)')
+parser.add_argument('--coordinate-padding', type=int, default=2,
+                    help='Positive number of learned coordinate samples per side (independent of visual padding)')
 parser.add_argument('--use-color-shift', action="store_true", help='use color shift')
 
 args = parser.parse_args()
@@ -101,6 +105,7 @@ model_kwargs = dict(vocab_size=len(id2token), max_len=MAXLEN, hidden_size=args.h
                     use_posconv=args.use_posconv, use_color_shift=args.use_color_shift,
                     posconv_size=args.posconv_size, coordinate_method=args.coordinate_method,
                     posconv_implementation=args.posconv_implementation, head=args.head,
+                    positional_mode=args.positional_mode, coordinate_padding=args.coordinate_padding,
                     position_embedding_dim=args.position_embedding_dim,
                     image_height=args.TARGET_HEIGHT, image_width=args.TARGET_WIDTH)
 model = CNNSeq2Seq(**model_kwargs)

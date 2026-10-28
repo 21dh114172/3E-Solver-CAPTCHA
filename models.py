@@ -39,7 +39,7 @@ class SharedPositionHead(nn.Module):
 
 
 class CNNSeq2Seq(nn.Module):
-    def __init__(self, vocab_size, max_len, hidden_size=128, use_posconv=False, use_color_shift=False, posconv_size='', coordinate_method='interpolate', posconv_implementation='full', head='seq2seq', position_embedding_dim=16, image_height=64, image_width=128):
+    def __init__(self, vocab_size, max_len, hidden_size=128, use_posconv=False, use_color_shift=False, posconv_size='', coordinate_method='interpolate', posconv_implementation='full', head='seq2seq', position_embedding_dim=16, image_height=64, image_width=128, positional_mode='corrected', coordinate_padding=2):
         
         super(CNNSeq2Seq, self).__init__()
         self.max_len = max_len
@@ -51,7 +51,7 @@ class CNNSeq2Seq(nn.Module):
         self.use_color_shift = use_color_shift
         if use_color_shift:
             self.vcs = GlobalVariationalColorShift()
-        self.backbone = PosConv(posconv_size, coordinate_method=coordinate_method, posconv_implementation=posconv_implementation) if use_posconv else CNN()
+        self.backbone = PosConv(posconv_size, coordinate_method=coordinate_method, posconv_implementation=posconv_implementation, positional_mode=positional_mode, coordinate_padding=coordinate_padding) if use_posconv else CNN()
         if head == 'seq2seq':
             self.encoder = Encoder(rnn_hidden_size=hidden_size)
             self.decoder = HybirdDecoder(vocab_size=vocab_size, hidden_size=hidden_size)

@@ -34,6 +34,8 @@ def save_model(epochs, model, optimizer, criterion, vocab, id2token, image_heigh
                 'image_width': image_width,
                 'posconv_implementation': getattr(model.backbone, 'posconv_implementation', 'full'),
                 'coordinate_method': getattr(model.backbone, 'coordinate_method', 'interpolate'),
+                'positional_mode': getattr(model.backbone, 'positional_mode', 'legacy'),
+                'coordinate_padding': getattr(model.backbone, 'coordinate_padding', 2),
                 'posconv_size': posconv_size,
                 }, f'result/{model_name}')
     torch.save(model, f'result/embed_{model_name}')
@@ -71,6 +73,8 @@ class SaveBestModel:
                 'image_width': image_width,
                 'posconv_implementation': getattr(model.backbone, 'posconv_implementation', 'full'),
                 'coordinate_method': getattr(model.backbone, 'coordinate_method', 'interpolate'),
+                'positional_mode': getattr(model.backbone, 'positional_mode', 'legacy'),
+                'coordinate_padding': getattr(model.backbone, 'coordinate_padding', 2),
                 'posconv_size': posconv_size,
                 }, f'result/{model_name}')
             torch.save(model, f'result/embed_{model_name}')

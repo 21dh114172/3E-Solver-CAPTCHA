@@ -5,6 +5,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 from torch.nn import Parameter
 import math
+from coordinate_padding import LearnedCoordinatePadding, POSITIONAL_MODES, set_positional_mode
 
 USE_CUDA = torch.cuda.is_available()
 
@@ -35,11 +36,16 @@ class PosConv(nn.Module):
     Methods:
         forward(x): Processes input through the network with positional encoding
     """
-    def __init__(self, pos_size='large', coordinate_method='interpolate', posconv_implementation='full'):
+    def __init__(self, pos_size='large', coordinate_method='interpolate', posconv_implementation='full',
+                 positional_mode='corrected', coordinate_padding=2):
         super().__init__()
         if posconv_implementation not in ('full', 'sequential'):
             raise ValueError(f'Unknown PosConv implementation: {posconv_implementation}')
+        if positional_mode not in POSITIONAL_MODES:
+            raise ValueError(f'Unknown positional mode: {positional_mode}')
+        self.positional_mode = positional_mode
         self.posconv_implementation = posconv_implementation
+        self.coordinate_padding = coordinate_padding
         positional_layer = PosConv2DLayer if posconv_implementation == 'full' else SequentialPosConv2DLayer
         self.coordinate_method = coordinate_method
         self.pos_size = pos_size  # 'small' | 'medium' | 'large'
@@ -49,7 +55,8 @@ class PosConv(nn.Module):
         self.dropout_1 = nn.Dropout(0.1)
         
         # Pos‐conv before conv2 (only large)
-        self.conv8 = positional_layer(32, 32, kernel_size=3, padding=1, coordinate_method=coordinate_method)
+        self.conv8 = positional_layer(32, 32, kernel_size=3, padding=1, coordinate_method=coordinate_method,
+                                       positional_mode=positional_mode, coordinate_padding=coordinate_padding)
         self.dropout_8 = nn.Dropout(0.1)
         
         self.conv2 = ResBlk(32, 64)
@@ -57,7 +64,8 @@ class PosConv(nn.Module):
         self.dropout_2 = nn.Dropout(0.1)
         
         # Pos‐conv before conv3 (only large)
-        self.conv7 = positional_layer(64, 64, kernel_size=3, padding=1, coordinate_method=coordinate_method)
+        self.conv7 = positional_layer(64, 64, kernel_size=3, padding=1, coordinate_method=coordinate_method,
+                                       positional_mode=positional_mode, coordinate_padding=coordinate_padding)
         self.dropout_7 = nn.Dropout(0.1)
         
         self.conv3 = ResBlk(64, 128)
@@ -65,7 +73,8 @@ class PosConv(nn.Module):
         self.dropout_3 = nn.Dropout(0.1)
         
         # Pos‐conv before conv4 (medium+large)
-        self.conv6 = positional_layer(128, 128, kernel_size=3, padding=1, coordinate_method=coordinate_method)
+        self.conv6 = positional_layer(128, 128, kernel_size=3, padding=1, coordinate_method=coordinate_method,
+                                       positional_mode=positional_mode, coordinate_padding=coordinate_padding)
         self.dropout_6 = nn.Dropout(0.1)
         
         self.conv4 = ResBlk(128, 256)
@@ -73,7 +82,8 @@ class PosConv(nn.Module):
         self.dropout_4 = nn.Dropout(0.1)
         
         # Pos‐conv before conv5 (always)
-        self.conv9 = positional_layer(256, 256, kernel_size=3, padding=1, coordinate_method=coordinate_method)
+        self.conv9 = positional_layer(256, 256, kernel_size=3, padding=1, coordinate_method=coordinate_method,
+                                       positional_mode=positional_mode, coordinate_padding=coordinate_padding)
         self.dropout_9 = nn.Dropout(0.1)
         
         self.conv5 = ResBlk(256, 256)
@@ -89,7 +99,7 @@ class PosConv(nn.Module):
         batch_size, _, H, W = x.shape
 
         pos_y = pos_x = None
-        if self.coordinate_method == 'interpolate':
+        if self.positional_mode == 'legacy' and self.coordinate_method == 'interpolate':
             if (self.pos_map_y_orig is None
                     or self.pos_map_y_orig.shape[2:] != (H, W)
                     or self.pos_map_y_orig.device != x.device):
@@ -307,7 +317,12 @@ class ResBlk(nn.Module):
 
 class PosConv2DLayer(nn.Module):
     """
-    2D convolution with positional encoding.
+    Square/rectangular visual convolution with additive axis position terms.
+
+    Corrected/linear/explicit modes use current INPUT geometry, not interpolated
+    image maps. coordinate_method selects the original behavior in legacy mode.
+    Wpos_x/y are retained solely for legacy checkpoint/baseline comparisons.
+    Full 2D is an additive-axis extension, not a claim of author equivalence.
     
     Enhances standard convolution by adding learnable position-dependent offsets.
     
@@ -323,35 +338,49 @@ class PosConv2DLayer(nn.Module):
             Process input with positional encoding.
             Returns full tensor or intermediates if requested.
     """
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, coordinate_method='interpolate'):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, coordinate_method='interpolate',
+                 positional_mode='corrected', coordinate_padding=2):
         super().__init__()
         if coordinate_method not in ('interpolate', 'regenerate'):
             raise ValueError(f'Unknown coordinate method: {coordinate_method}')
+        if positional_mode not in POSITIONAL_MODES:
+            raise ValueError(f'Unknown positional mode: {positional_mode}')
+        self.positional_mode = positional_mode
         self.coordinate_method = coordinate_method
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False)
         self.Wpos_y = nn.Parameter(torch.randn(1, out_channels, 1, 1))
         self.Wpos_x = nn.Parameter(torch.randn(1, out_channels, 1, 1))
         self.bpos = nn.Parameter(torch.zeros(1, out_channels, 1, 1))
+        self.coordinate_y = LearnedCoordinatePadding(in_channels, out_channels, coordinate_padding)
+        self.coordinate_x = LearnedCoordinatePadding(in_channels, out_channels, coordinate_padding)
         self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU()
         self.out_channels = out_channels # Store out_channels
 
-    def forward(self, x, pos_map_y, pos_map_x, return_intermediates=False): # Added flag
+    def forward(self, x, pos_map_y=None, pos_map_x=None, return_intermediates=False): # Added flag
         S_org = self.conv(x)
-        output_height, output_width = S_org.shape[2], S_org.shape[3]
-        if self.coordinate_method == 'interpolate':
-            current_pos_map_y = F.interpolate(pos_map_y, size=(output_height, output_width), mode='bilinear', align_corners=False)
-            current_pos_map_x = F.interpolate(pos_map_x, size=(output_height, output_width), mode='bilinear', align_corners=False)
+        if self.positional_mode == 'legacy':
+            output_height, output_width = S_org.shape[2], S_org.shape[3]
+            if self.coordinate_method == 'interpolate':
+                current_pos_map_y = F.interpolate(pos_map_y, size=(output_height, output_width), mode='bilinear', align_corners=False)
+                current_pos_map_x = F.interpolate(pos_map_x, size=(output_height, output_width), mode='bilinear', align_corners=False)
+            else:
+                # Generate coordinates directly at the current feature resolution.
+                kernel_y, kernel_x = self.conv.kernel_size
+                current_pos_map_y = ((torch.arange(output_height, device=S_org.device, dtype=S_org.dtype)
+                                      - kernel_y // 2) / output_height).view(1, 1, -1, 1)
+                current_pos_map_x = ((torch.arange(output_width, device=S_org.device, dtype=S_org.dtype)
+                                      - kernel_x // 2) / output_width).view(1, 1, 1, -1)
+            positional_offset = (self.Wpos_y * current_pos_map_y +
+                                 self.Wpos_x * current_pos_map_x +
+                                 self.bpos)
         else:
-            # Generate coordinates directly at the current feature resolution.
-            kernel_y, kernel_x = self.conv.kernel_size
-            current_pos_map_y = ((torch.arange(output_height, device=S_org.device, dtype=S_org.dtype)
-                                  - kernel_y // 2) / output_height).view(1, 1, -1, 1)
-            current_pos_map_x = ((torch.arange(output_width, device=S_org.device, dtype=S_org.dtype)
-                                  - kernel_x // 2) / output_width).view(1, 1, 1, -1)
-        positional_offset = (self.Wpos_y * current_pos_map_y +
-                             self.Wpos_x * current_pos_map_x +
-                             self.bpos)
+            positional_offset = (
+                self.coordinate_y(S_org, x.shape[2], 2, self.conv.kernel_size[0],
+                                  self.conv.stride[0], self.conv.padding[0], self.positional_mode)
+                + self.coordinate_x(S_org, x.shape[3], 3, self.conv.kernel_size[1],
+                                    self.conv.stride[1], self.conv.padding[1], self.positional_mode)
+                + self.bpos)
         S_exp = S_org + positional_offset
         out = self.relu(self.bn(S_exp)) # Apply BN before ReLU
 
@@ -369,10 +398,14 @@ class SequentialPosConv2DLayer(nn.Module):
     """
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0,
-                 coordinate_method='interpolate'):
+                 coordinate_method='interpolate', positional_mode='corrected',
+                 coordinate_padding=2):
         super().__init__()
         if coordinate_method not in ('interpolate', 'regenerate'):
             raise ValueError(f'Unknown coordinate method: {coordinate_method}')
+        if positional_mode not in POSITIONAL_MODES:
+            raise ValueError(f'Unknown positional mode: {positional_mode}')
+        self.positional_mode = positional_mode
         self.coordinate_method = coordinate_method
         ky, kx = nn.modules.utils._pair(kernel_size)
         sy, sx = nn.modules.utils._pair(stride)
@@ -385,6 +418,8 @@ class SequentialPosConv2DLayer(nn.Module):
         self.Wpos_y = nn.Parameter(torch.zeros(1, out_channels, 1, 1))
         self.bpos_x = nn.Parameter(torch.zeros(1, out_channels, 1, 1))
         self.bpos_y = nn.Parameter(torch.zeros(1, out_channels, 1, 1))
+        self.coordinate_x = LearnedCoordinatePadding(in_channels, out_channels, coordinate_padding)
+        self.coordinate_y = LearnedCoordinatePadding(out_channels, out_channels, coordinate_padding)
         self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU()
 
@@ -399,12 +434,26 @@ class SequentialPosConv2DLayer(nn.Module):
 
     def forward(self, x, pos_map_y=None, pos_map_x=None, return_intermediates=False):
         horizontal_features = self.horizontal(x)
-        coord_x = self._coordinate(horizontal_features, pos_map_x, 3,
-                                   self.horizontal.kernel_size[1])
-        horizontal = horizontal_features + self.Wpos_x * coord_x + self.bpos_x
+        if self.positional_mode == 'legacy':
+            coord_x = self._coordinate(horizontal_features, pos_map_x, 3,
+                                       self.horizontal.kernel_size[1])
+            offset_x = self.Wpos_x * coord_x + self.bpos_x
+        else:
+            offset_x = self.coordinate_x(
+                horizontal_features, x.shape[3], 3, self.horizontal.kernel_size[1],
+                self.horizontal.stride[1], self.horizontal.padding[1], self.positional_mode
+            ) + self.bpos_x
+        horizontal = horizontal_features + offset_x
         vertical = self.vertical(horizontal)
-        coord_y = self._coordinate(vertical, pos_map_y, 2, self.vertical.kernel_size[0])
-        expanded = vertical + self.Wpos_y * coord_y + self.bpos_y
+        if self.positional_mode == 'legacy':
+            coord_y = self._coordinate(vertical, pos_map_y, 2, self.vertical.kernel_size[0])
+            offset_y = self.Wpos_y * coord_y + self.bpos_y
+        else:
+            offset_y = self.coordinate_y(
+                vertical, horizontal.shape[2], 2, self.vertical.kernel_size[0],
+                self.vertical.stride[0], self.vertical.padding[0], self.positional_mode
+            ) + self.bpos_y
+        expanded = vertical + offset_y
         out = self.relu(self.bn(expanded))
         if return_intermediates:
             original = self.vertical(horizontal_features)

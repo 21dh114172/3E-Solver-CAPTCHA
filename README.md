@@ -74,10 +74,41 @@ introduced, so large images increase head parameters. Checkpoints record `head`,
 resuming. Existing checkpoints use `seq2seq`; C/D/seq2seq state dicts are not
 interchangeable.
 
-### PosConv coordinate method
+### Corrected PosConv positional computation
+
+Both training entry points now default to `--positional-mode corrected` and
+`--coordinate-padding 2`. The padding option counts learned coordinate samples
+per side, independently of visual convolution padding. Full and sequential
+variants retain their existing convolution, BN, ReLU and pooling order.
+
+```bash
+python FixMatch_2.py --use-posconv --posconv-size large --posconv-implementation sequential --positional-mode corrected --coordinate-padding 2
+```
+
+Modes are `legacy` (previous positional calculation), `linear` (learned
+slope/intercept without boundary substitution), `corrected` (adds boundary
+correction), and `explicit` (direct reference sum). Compare `linear` and
+`corrected` with identical weights and coordinate padding for a boundary ablation.
+New side weights start random in both variants; legacy slopes remain registered
+but inactive in the new modes. `coordinate_method` only affects `legacy` mode.
+
+Checkpoints record `positional_mode` and `coordinate_padding`; supply matching
+CLI options when resuming. Old PosConv state dicts lack the new side weights and
+cannot be resumed directly through the training scripts' strict loader. For
+legacy inference, construct with `positional_mode='legacy'`, load with
+`strict=False`, and verify that missing keys are exclusively
+`coordinate_x.left/right` and `coordinate_y.left/right` weights and that there
+are no unexpected keys. This does not produce a pretrained corrected model.
+
+See [the supplied correction notes](posconv_corrected/README.md) for the coordinate
+convention and research limitations. Run the installed implementation's tests
+with `python -B -m unittest discover -s tests -v`; the reference checks use
+`posconv_corrected/original/layers.py` as the compatibility fixture.
+
+### Legacy PosConv coordinate method
 
 Both `FixMatch_2.py` and `FixMatch_2_supervise.py` accept
-`--coordinate-method {interpolate,regenerate}` with `--use-posconv`:
+`--coordinate-method {interpolate,regenerate}` with `--use-posconv --positional-mode legacy`:
 
 - `interpolate` (default): generate original-image position maps and resize them
   to each feature resolution using bilinear interpolation.
@@ -87,7 +118,7 @@ Both `FixMatch_2.py` and `FixMatch_2_supervise.py` accept
 Example (the same flags work with `FixMatch_2_supervise.py`):
 
 ```bash
-python FixMatch_2.py --use-posconv --posconv-size large --coordinate-method regenerate
+python FixMatch_2.py --use-posconv --posconv-size large --positional-mode legacy --coordinate-method regenerate
 ```
 
 The selected method is recorded in checkpoint metadata as `coordinate_method`.
@@ -100,17 +131,17 @@ When reconstructing a model from a state dict, pass the same method to
 Both training entry points accept `--posconv-implementation {full,sequential}`:
 
 - `full` (default): one full 3x3 convolution, then both positional offsets and
-  one positional bias, followed by BN and ReLU. Position weights start random.
+  one positional bias, followed by BN and ReLU. Legacy position weights start random.
 - `sequential`: a 1x3 convolution with X position and bias, then a 3x1
   convolution with Y position and bias, followed by BN and ReLU. Position
-  weights and biases start at zero. The vertical convolution processes the
+  slopes and biases start at zero in legacy mode. The vertical convolution processes the
   horizontal position term, with zero padding applied separately on each axis.
 
-Coordinate generation is selected independently with `--coordinate-method`.
+Legacy coordinate generation is selected with `--coordinate-method`.
 For sequential convolutions with coordinates regenerated at each resolution:
 
 ```bash
-python FixMatch_2.py --use-posconv --posconv-size large --posconv-implementation sequential --coordinate-method regenerate
+python FixMatch_2.py --use-posconv --posconv-size large --posconv-implementation sequential --positional-mode legacy --coordinate-method regenerate
 ```
 
 The same flags work with `FixMatch_2_supervise.py`. This selects the positional
